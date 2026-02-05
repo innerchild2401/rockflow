@@ -58,6 +58,18 @@ export default async function CompanyPage({
         >
           Tasks
         </Link>
+        <Link
+          href={`/dashboard/companies/${slug}/audit`}
+          className="rounded-xl border border-zinc-200 bg-white p-6 text-sm font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:bg-zinc-800"
+        >
+          Audit log
+        </Link>
+        <Link
+          href={`/dashboard/companies/${slug}/chat`}
+          className="rounded-xl border border-zinc-200 bg-white p-6 text-sm font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:bg-zinc-800"
+        >
+          Chat (RAG)
+        </Link>
         {membership.role === 'admin' && (
           <Link
             href={`/dashboard/companies/${slug}/members`}

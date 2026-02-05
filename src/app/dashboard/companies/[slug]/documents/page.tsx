@@ -5,6 +5,7 @@ import { canReadDocuments, canManageFolders, canCreateDocuments, canEditDocument
 import DocumentsList from './DocumentsList'
 import CreateFolderForm from './CreateFolderForm'
 import CreateDocumentForm from './CreateDocumentForm'
+import UploadDocumentsForm from './UploadDocumentsForm'
 
 const APP_SCHEMA = 'app'
 
@@ -55,10 +56,16 @@ export default async function DocumentsPage({ params }: { params: Promise<{ slug
       )}
 
       {canCreate && (
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-          <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-50">New document</h2>
-          <CreateDocumentForm companyId={company.id} slug={slug} folders={foldersList} />
-        </div>
+        <>
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+            <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Upload documents</h2>
+            <UploadDocumentsForm companyId={company.id} slug={slug} folders={foldersList} />
+          </div>
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+            <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-50">New document</h2>
+            <CreateDocumentForm companyId={company.id} slug={slug} folders={foldersList} />
+          </div>
+        </>
       )}
 
       <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">

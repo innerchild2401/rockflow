@@ -7,8 +7,38 @@ import {
   canDeleteDocuments,
   canManageFolders,
 } from '@/lib/permissions'
+import { chunkText } from '@/lib/chunking'
+import { isAllowedDocumentFilename, getDocumentTitleFromFilename } from '@/lib/upload-types'
+import { extractTextFromBuffer, isBinaryExtension } from '@/lib/extract-document-text'
+import { embedTexts } from '@/lib/openai'
 
 const APP_SCHEMA = 'app'
+
+/** Sync document_chunks for a document (RAG prep). Deletes existing chunks, generates embeddings via OpenAI, inserts. */
+async function syncChunksForDocument(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  documentId: string,
+  companyId: string,
+  content: string
+) {
+  await supabase.schema(APP_SCHEMA).from('document_chunks').delete().eq('document_id', documentId)
+  const chunks = chunkText(content)
+  if (chunks.length === 0) return
+  let embeddings: number[][] = []
+  try {
+    embeddings = await embedTexts(chunks.map((c) => c.content))
+  } catch {
+    // OPENAI_API_KEY missing or error: store chunks without embeddings
+  }
+  const rows = chunks.map((c, i) => ({
+    document_id: documentId,
+    company_id: companyId,
+    content: c.content,
+    chunk_index: c.index,
+    embedding: embeddings[i] ? `[${embeddings[i].join(',')}]` : null,
+  }))
+  await supabase.schema(APP_SCHEMA).from('document_chunks').insert(rows)
+}
 
 export async function createFolderAction(
   companyId: string,
@@ -62,7 +92,111 @@ export async function createDocumentAction(
     .select('id')
     .single()
   if (error) return { error: error.message, id: null }
+  if (data?.id && content?.trim() && (await canEditDocuments(companyId))) {
+    await syncChunksForDocument(supabase, data.id, companyId, content.trim())
+  }
   return { error: null, id: data.id }
+}
+
+export type UploadedFilePayload = { name: string; content: string }
+
+/** Create one document per uploaded file (multiple files at once). Validates allowed extensions. */
+export async function createDocumentsFromFilesAction(
+  companyId: string,
+  folderId: string | null,
+  files: UploadedFilePayload[]
+) {
+  if (!(await canCreateDocuments(companyId)))
+    return { error: 'No permission to create documents.', created: 0, skipped: [] as string[] }
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated.', created: 0, skipped: [] as string[] }
+  const { data: profile } = await supabase.schema(APP_SCHEMA).from('profiles').select('id').eq('id', user.id).single()
+  const canEdit = await canEditDocuments(companyId)
+  const skipped: string[] = []
+  let created = 0
+  for (const f of files) {
+    if (!isAllowedDocumentFilename(f.name)) {
+      skipped.push(f.name)
+      continue
+    }
+    const title = getDocumentTitleFromFilename(f.name).trim() || f.name
+    const { data, error } = await supabase
+      .schema(APP_SCHEMA)
+      .from('documents')
+      .insert({
+        company_id: companyId,
+        folder_id: folderId,
+        title,
+        content: f.content ?? '',
+        created_by: profile?.id ?? user.id,
+      })
+      .select('id')
+      .single()
+    if (error) return { error: error.message, created, skipped }
+    if (data?.id && (f.content?.trim()) && canEdit) {
+      await syncChunksForDocument(supabase, data.id, companyId, f.content.trim())
+    }
+    created++
+  }
+  return { error: null, created, skipped }
+}
+
+/** Create documents from FormData (supports binary PDF/DOC/DOCX; server extracts text). */
+export async function createDocumentsFromFormDataAction(formData: FormData) {
+  const companyId = formData.get('companyId') as string
+  const folderIdRaw = formData.get('folderId')
+  const folderId = (folderIdRaw && String(folderIdRaw).trim()) || null
+  if (!companyId) return { error: 'Missing companyId.', created: 0, skipped: [] as string[] }
+
+  if (!(await canCreateDocuments(companyId)))
+    return { error: 'No permission to create documents.', created: 0, skipped: [] as string[] }
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated.', created: 0, skipped: [] as string[] }
+  const { data: profile } = await supabase.schema(APP_SCHEMA).from('profiles').select('id').eq('id', user.id).single()
+  const canEdit = await canEditDocuments(companyId)
+  const skipped: string[] = []
+  let created = 0
+  const files = formData.getAll('files') as File[]
+  for (const file of files) {
+    if (!file?.name || !isAllowedDocumentFilename(file.name)) {
+      skipped.push(file?.name ?? 'unknown')
+      continue
+    }
+    let content: string
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+      if (isBinaryExtension(file.name)) {
+        content = await extractTextFromBuffer(buffer, file.name)
+      } else {
+        content = buffer.toString('utf-8').trim()
+      }
+    } catch (err) {
+      skipped.push(file.name)
+      continue
+    }
+    const title = getDocumentTitleFromFilename(file.name).trim() || file.name
+    const { data, error } = await supabase
+      .schema(APP_SCHEMA)
+      .from('documents')
+      .insert({
+        company_id: companyId,
+        folder_id: folderId,
+        title,
+        content: content ?? '',
+        created_by: profile?.id ?? user.id,
+      })
+      .select('id')
+      .single()
+    if (error) return { error: error.message, created, skipped }
+    if (data?.id && (content?.trim()) && canEdit) {
+      await syncChunksForDocument(supabase, data.id, companyId, content.trim())
+    }
+    created++
+  }
+  return { error: null, created, skipped }
 }
 
 export async function updateDocumentAction(
@@ -82,7 +216,9 @@ export async function updateDocumentAction(
     .update({ title: title.trim(), content, updated_by: profile?.id ?? user.id, updated_at: new Date().toISOString() })
     .eq('id', documentId)
     .eq('company_id', companyId)
-  return error ? { error: error.message } : { error: null }
+  if (error) return { error: error.message }
+  await syncChunksForDocument(supabase, documentId, companyId, content)
+  return { error: null }
 }
 
 export async function deleteDocumentAction(companyId: string, documentId: string) {

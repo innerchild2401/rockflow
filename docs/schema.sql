@@ -581,6 +581,38 @@ CREATE TRIGGER task_comments_updated_at
   FOR EACH ROW EXECUTE FUNCTION app.set_updated_at();
 
 -- =============================================================================
+-- RAG: similarity search (call from app with query embedding)
+-- =============================================================================
+-- query_embedding_text: JSON array string e.g. '[0.1,-0.2,...]' (1536 dims)
+CREATE OR REPLACE FUNCTION app.match_document_chunks(
+  query_embedding_text TEXT,
+  p_company_id UUID,
+  match_count INT DEFAULT 10,
+  match_threshold FLOAT DEFAULT 0.0
+)
+RETURNS TABLE (id UUID, document_id UUID, content TEXT, chunk_index INT, similarity FLOAT)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = app
+AS $$
+DECLARE
+  query_embedding vector(1536);
+BEGIN
+  query_embedding := query_embedding_text::vector(1536);
+  RETURN QUERY
+  SELECT dc.id, dc.document_id, dc.content, dc.chunk_index,
+         (1 - (dc.embedding <=> query_embedding))::FLOAT AS similarity
+  FROM app.document_chunks dc
+  WHERE dc.company_id = p_company_id
+    AND dc.embedding IS NOT NULL
+    AND (1 - (dc.embedding <=> query_embedding)) >= match_threshold
+  ORDER BY dc.embedding <=> query_embedding
+  LIMIT match_count;
+END;
+$$;
+
+-- =============================================================================
 -- NOTES FOR APPLICATION
 -- =============================================================================
 -- 1. Create profile on sign-up (Supabase Auth trigger or app logic).
