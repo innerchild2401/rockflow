@@ -1,0 +1,14 @@
+---
+description: Run full local build before commit so Vercel builds succeed
+alwaysApply: true
+---
+
+# Build before commit
+
+Before committing and pushing changes that affect the app or dependencies:
+
+1. **Run the full build locally:** `npm run build`
+2. Only commit and push if the build completes successfully (exit code 0).
+3. If the build fails, fix the errors and run `npm run build` again before committing.
+
+This ensures the project builds on Vercel. The user runs `git push` after your commits.
