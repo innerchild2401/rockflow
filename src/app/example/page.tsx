@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabaseClient'
+import { createClient } from '@/lib/supabase/client'
+
+const supabase = createClient()
 
 /**
  * Example page demonstrating Supabase client usage

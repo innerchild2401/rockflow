@@ -1,0 +1,12 @@
+---
+description: Git workflow — add, commit, and push (use full permissions for push)
+alwaysApply: true
+---
+
+# Git workflow
+
+When making changes that should be in version control:
+
+1. **Stage and commit:** Use `git add` and `git commit` with a clear message.
+2. **Push:** Run `git push` with **full permissions** (`required_permissions: ["all"]`) so the command can use the user's system Git credentials (Credential Manager / SSH).
+3. If push was not run or failed, tell the user: **To update the remote, run:** `git push`
