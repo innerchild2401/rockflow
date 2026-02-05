@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabaseClient'
  * This is a Client Component (uses 'use client' directive)
  */
 export default function ExamplePage() {
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<{ message: string; session: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
