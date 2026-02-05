@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card } from '@/components/ui/Card'
 
 const APP_SCHEMA = 'app'
 
@@ -68,23 +69,15 @@ export default async function AuditPage({
   const rows = (logs ?? []) as { id: string; user_id: string | null; action: string; entity_type: string; entity_id: string | null; created_at: string }[]
 
   return (
-    <div className="max-w-4xl space-y-8">
-      <div>
-        <Link
-          href={`/dashboard/companies/${slug}`}
-          className="text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
-        >
-          ← {company.name}
-        </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Audit log
-        </h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Recent activity for this company (last 200 entries).
-        </p>
-      </div>
+    <div className="mx-auto max-w-4xl space-y-8">
+      <PageHeader
+        backHref={`/dashboard/companies/${slug}`}
+        backLabel={company.name}
+        title="Audit log"
+        description="Recent activity for this company (last 200 entries)."
+      />
 
-      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+      <Card padding="none" className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-700">
             <thead>
@@ -124,7 +117,7 @@ export default async function AuditPage({
             No audit entries yet.
           </div>
         )}
-      </div>
+      </Card>
     </div>
   )
 }

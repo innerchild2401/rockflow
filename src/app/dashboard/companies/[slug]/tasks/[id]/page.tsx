@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import { canReadTasks, canEditTasks, canDeleteTasks } from '@/lib/permissions'
+import { PageHeader } from '@/components/ui/PageHeader'
 import TaskDetail from './TaskDetail'
 import TaskComments from './TaskComments'
 
@@ -82,10 +82,8 @@ export default async function TaskPage({
   const membersList = (memberProfiles ?? []) as { id: string; display_name: string | null; email: string }[]
 
   return (
-    <div className="max-w-3xl space-y-8">
-      <div>
-        <Link href={`/dashboard/companies/${slug}/tasks`} className="text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50">← Tasks</Link>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-8">
+      <PageHeader backHref={`/dashboard/companies/${slug}/tasks`} backLabel="Tasks" title="Task" />
       <TaskDetail
         companyId={company.id}
         taskId={task.id}

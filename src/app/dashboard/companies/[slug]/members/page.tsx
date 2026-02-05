@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import { canManageMembers } from '@/lib/permissions'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card, CardHeader, CardContent } from '@/components/ui/Card'
 import MembersList from './MembersList'
 import InviteForm from './InviteForm'
 import PendingInvites from './PendingInvites'
@@ -61,20 +62,26 @@ export default async function MembersPage({ params }: { params: Promise<{ slug: 
     .gt('expires_at', new Date().toISOString())
 
   return (
-    <div className="max-w-3xl space-y-8">
-      <div>
-        <Link href={`/dashboard/companies/${slug}`} className="text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50">← {company.name}</Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Members</h1>
-      </div>
-      <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Invite by email</h2>
-        <InviteForm companyId={company.id} slug={slug} />
-      </div>
+    <div className="mx-auto max-w-3xl space-y-8">
+      <PageHeader
+        backHref={`/dashboard/companies/${slug}`}
+        backLabel={company.name}
+        title="Members"
+        description="Team and permissions for this company."
+      />
+      <Card>
+        <CardHeader title="Invite by email" />
+        <CardContent>
+          <InviteForm companyId={company.id} slug={slug} />
+        </CardContent>
+      </Card>
       {invites && invites.length > 0 && <PendingInvites invites={invites} slug={slug} />}
-      <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="border-b border-zinc-200 px-6 py-4 text-sm font-medium text-zinc-900 dark:border-zinc-700 dark:text-zinc-50">Members ({memberList.length})</h2>
+      <Card padding="none">
+        <div className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-700">
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Members ({memberList.length})</h2>
+        </div>
         <MembersList members={memberList} companyId={company.id} slug={slug} currentUserId={user.id} canManage={manageAllowed} />
-      </div>
+      </Card>
     </div>
   )
 }

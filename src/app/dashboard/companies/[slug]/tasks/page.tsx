@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import { canReadTasks, canCreateTasks } from '@/lib/permissions'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card, CardHeader, CardContent } from '@/components/ui/Card'
 import CreateTaskForm from './CreateTaskForm'
 import TasksList from './TasksList'
 
@@ -48,23 +49,29 @@ export default async function TasksPage({ params }: { params: Promise<{ slug: st
   const membersList = (profiles ?? []) as { id: string; display_name: string | null; email: string }[]
 
   return (
-    <div className="max-w-3xl space-y-8">
-      <div>
-        <Link href={`/dashboard/companies/${slug}`} className="text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50">← {company.name}</Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Tasks</h1>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-8">
+      <PageHeader
+        backHref={`/dashboard/companies/${slug}`}
+        backLabel={company.name}
+        title="Tasks"
+        description="Manage tasks and comments."
+      />
 
       {canCreate && (
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-          <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-50">New task</h2>
-          <CreateTaskForm companyId={company.id} slug={slug} members={membersList} />
-        </div>
+        <Card>
+          <CardHeader title="New task" />
+          <CardContent>
+            <CreateTaskForm companyId={company.id} slug={slug} members={membersList} />
+          </CardContent>
+        </Card>
       )}
 
-      <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="border-b border-zinc-200 px-6 py-4 text-sm font-medium text-zinc-900 dark:border-zinc-700 dark:text-zinc-50">All tasks</h2>
+      <Card padding="none">
+        <div className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-700">
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">All tasks</h2>
+        </div>
         <TasksList slug={slug} tasks={tasksList} memberNames={memberNames} />
-      </div>
+      </Card>
     </div>
   )
 }
