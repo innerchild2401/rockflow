@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createCompanyAction } from '@/app/actions/companies'
 
-export default function CreateCompanyForm({ userId, createdBy }: { userId: string; createdBy: string }) {
+export default function CreateCompanyForm() {
   const router = useRouter()
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
@@ -24,7 +24,7 @@ export default function CreateCompanyForm({ userId, createdBy }: { userId: strin
     e.preventDefault()
     setLoading(true)
     setError(null)
-    const result = await createCompanyAction({ name, slug, createdBy, userId })
+    const result = await createCompanyAction({ name, slug })
     setLoading(false)
     if (result.error) {
       setError(result.error)

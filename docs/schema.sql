@@ -613,6 +613,18 @@ END;
 $$;
 
 -- =============================================================================
+-- GRANTS: Allow Supabase client roles to use the app schema (required for custom schemas)
+-- Run this block in Supabase SQL Editor if you get "permission denied for schema app"
+-- =============================================================================
+GRANT USAGE ON SCHEMA app TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA app TO anon, authenticated;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA app TO anon, authenticated;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA app TO anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA app GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA app GRANT USAGE, SELECT ON SEQUENCES TO anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA app GRANT EXECUTE ON FUNCTIONS TO anon, authenticated;
+
+-- =============================================================================
 -- NOTES FOR APPLICATION
 -- =============================================================================
 -- 1. Create profile on sign-up (Supabase Auth trigger or app logic).
