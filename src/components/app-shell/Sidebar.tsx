@@ -86,14 +86,14 @@ export function Sidebar({
               {currentCompany.name}
             </p>
             {companyNav.map((item) => {
-              // Check for exact match first
+              // Exact match: this nav item's href equals current path
               const exactMatch = pathname === item.href
-              // Only use startsWith if no exact match, and ensure it's a proper sub-path
+              // Sub-path: current path is under this item (e.g. /tasks/123 under /tasks)
               const isSubPath = !exactMatch && item.href !== base && pathname?.startsWith(item.href + '/')
-              // Don't highlight parent routes when on a more specific child route
-              // e.g., don't highlight /tasks when on /tasks/calendar
+              // Another nav item is a better match: either exact (e.g. /tasks/calendar) or a longer path
+              // So we don't highlight /tasks when we're on /tasks/calendar
               const hasMoreSpecificMatch = companyNav.some(
-                (otherItem) => otherItem.href !== item.href && pathname?.startsWith(otherItem.href + '/')
+                (other) => other.href !== item.href && (pathname === other.href || (pathname?.startsWith(other.href + '/') ?? false))
               )
               const active = exactMatch || (isSubPath && !hasMoreSpecificMatch)
               return (
