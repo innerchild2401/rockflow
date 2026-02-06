@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { canReadTasks } from '@/lib/permissions'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
-import { EmptyState } from '@/components/ui/EmptyState'
+import TasksCalendar from './TasksCalendar'
 
 const APP_SCHEMA = 'app'
 
@@ -21,19 +21,49 @@ export default async function TasksCalendarPage({
   const canRead = await canReadTasks(company.id)
   if (!canRead) notFound()
 
+  // Fetch all tasks with due dates
+  const { data: tasks } = await supabase
+    .schema(APP_SCHEMA)
+    .from('tasks')
+    .select('id, title, status, due_date, assigned_to, updated_at')
+    .eq('company_id', company.id)
+
+  // Get member names
+  const { data: members } = await supabase
+    .schema(APP_SCHEMA)
+    .from('company_members')
+    .select('user_id')
+    .eq('company_id', company.id)
+
+  const userIds = [...new Set((members ?? []).map((m) => m.user_id))]
+  const { data: profiles } = userIds.length
+    ? await supabase.schema(APP_SCHEMA).from('profiles').select('id, display_name, email').in('id', userIds)
+    : { data: [] }
+
+  const memberNames: Record<string, string> = {}
+  for (const p of profiles ?? []) {
+    memberNames[p.id] = p.display_name || p.email
+  }
+
+  const tasksList = (tasks ?? []) as {
+    id: string
+    title: string
+    status: string
+    due_date: string | null
+    assigned_to: string | null
+    updated_at: string
+  }[]
+
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div className="mx-auto max-w-7xl space-y-6">
       <PageHeader
         backHref={`/dashboard/companies/${slug}`}
         backLabel={company.name}
         title="Calendar"
-        description="Task calendar view and Google Calendar sync (coming soon)."
+        description="View tasks organized by their due dates."
       />
-      <Card className="flex min-h-[320px] items-center justify-center">
-        <EmptyState
-          title="Calendar view"
-          description="Calendar view for tasks and Google Calendar sync will be available in a future update. Use the Tasks list for now."
-        />
+      <Card padding="lg">
+        <TasksCalendar slug={slug} tasks={tasksList} memberNames={memberNames} />
       </Card>
     </div>
   )
