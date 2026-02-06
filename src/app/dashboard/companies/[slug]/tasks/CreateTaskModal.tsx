@@ -12,18 +12,20 @@ export default function CreateTaskModal({
   companyId,
   slug,
   members,
+  initialDueDate,
   onClose,
 }: {
   companyId: string
   slug: string
   members: { id: string; display_name: string | null; email: string }[]
+  initialDueDate?: string
   onClose: () => void
 }) {
   const router = useRouter()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [status, setStatus] = useState<TaskStatus>('todo')
-  const [dueDate, setDueDate] = useState('')
+  const [dueDate, setDueDate] = useState(initialDueDate || '')
   const [assignedTo, setAssignedTo] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

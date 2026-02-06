@@ -1,8 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/Badge'
+import { updateTaskAction } from '@/app/actions/tasks'
+import CreateTaskModal from '../CreateTaskModal'
 
 const STATUS_COLORS: Record<string, string> = {
   todo: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
@@ -33,15 +36,26 @@ type Task = {
 }
 
 export default function TasksCalendar({
+  companyId,
   slug,
   tasks,
   memberNames,
+  members,
+  canEdit,
 }: {
+  companyId: string
   slug: string
   tasks: Task[]
   memberNames: Record<string, string>
+  members: { id: string; display_name: string | null; email: string }[]
+  canEdit: boolean
 }) {
+  const router = useRouter()
   const [currentDate, setCurrentDate] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [draggedTask, setDraggedTask] = useState<Task | null>(null)
+  const [dragOverDate, setDragOverDate] = useState<string | null>(null)
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
 
@@ -84,6 +98,37 @@ export default function TasksCalendar({
     return date.toDateString() === today.toDateString()
   }
 
+  function handleDayClick(day: number) {
+    if (!canEdit) return
+    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    setSelectedDate(dateKey)
+    setShowCreateModal(true)
+  }
+
+  async function handleDrop(dateKey: string) {
+    if (!draggedTask || !canEdit) return
+    await updateTaskAction(companyId, draggedTask.id, { due_date: dateKey })
+    setDraggedTask(null)
+    setDragOverDate(null)
+    router.refresh()
+  }
+
+  function handleDragStart(e: React.DragEvent, task: Task) {
+    if (!canEdit) return
+    e.stopPropagation()
+    setDraggedTask(task)
+  }
+
+  function handleDragOver(e: React.DragEvent, dateKey: string) {
+    if (!canEdit) return
+    e.preventDefault()
+    setDragOverDate(dateKey)
+  }
+
+  function handleDragLeave() {
+    setDragOverDate(null)
+  }
+
   // Get tasks without due dates
   const tasksWithoutDate = tasks.filter((t) => !t.due_date)
 
@@ -116,13 +161,27 @@ export default function TasksCalendar({
             </svg>
           </button>
         </div>
-        <button
-          type="button"
-          onClick={goToToday}
-          className="rounded border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
-        >
-          Today
-        </button>
+        <div className="flex items-center gap-2">
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedDate(null)
+                setShowCreateModal(true)
+              }}
+              className="rounded bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900"
+            >
+              + New Task
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={goToToday}
+            className="rounded border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          >
+            Today
+          </button>
+        </div>
       </div>
 
       {/* Calendar Grid */}
@@ -155,13 +214,18 @@ export default function TasksCalendar({
             const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
             const dayTasks = tasksByDate[dateKey] || []
             const isCurrentDay = isToday(day)
+            const isDragOver = dragOverDate === dateKey
 
             return (
               <div
                 key={day}
                 className={`min-h-[100px] border-b border-r border-zinc-200 p-2 last:border-r-0 dark:border-zinc-700 ${
                   isCurrentDay ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''
-                }`}
+                } ${isDragOver ? 'bg-blue-100 dark:bg-blue-950/40' : ''} ${canEdit ? 'cursor-pointer' : ''}`}
+                onClick={() => handleDayClick(day)}
+                onDragOver={(e) => handleDragOver(e, dateKey)}
+                onDragLeave={handleDragLeave}
+                onDrop={() => handleDrop(dateKey)}
               >
                 <div className={`mb-1 text-xs font-medium ${isCurrentDay ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-600 dark:text-zinc-400'}`}>
                   {day}
@@ -170,11 +234,18 @@ export default function TasksCalendar({
                   {dayTasks.slice(0, 3).map((task) => {
                     const urgency = getUrgency(task.due_date)
                     const statusColor = STATUS_COLORS[task.status] || STATUS_COLORS.todo
+                    const isDragging = draggedTask?.id === task.id
                     return (
                       <Link
                         key={task.id}
                         href={`/dashboard/companies/${slug}/tasks/${task.id}`}
-                        className={`block truncate rounded px-1.5 py-0.5 text-xs hover:opacity-80 ${urgency ? urgency.color : statusColor}`}
+                        draggable={canEdit}
+                        onDragStart={(e) => handleDragStart(e, task)}
+                        onDragEnd={() => setDraggedTask(null)}
+                        onClick={(e) => e.stopPropagation()}
+                        className={`block truncate rounded px-1.5 py-0.5 text-xs hover:opacity-80 ${urgency ? urgency.color : statusColor} ${
+                          isDragging ? 'opacity-50' : ''
+                        } ${canEdit ? 'cursor-move' : ''}`}
                       >
                         {task.title}
                       </Link>
@@ -220,6 +291,20 @@ export default function TasksCalendar({
             ))}
           </div>
         </div>
+      )}
+
+      {/* Create Task Modal */}
+      {showCreateModal && (
+        <CreateTaskModal
+          companyId={companyId}
+          slug={slug}
+          members={members}
+          initialDueDate={selectedDate || undefined}
+          onClose={() => {
+            setShowCreateModal(false)
+            setSelectedDate(null)
+          }}
+        />
       )}
     </div>
   )

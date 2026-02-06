@@ -1,9 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import { canReadTasks } from '@/lib/permissions'
+import { canReadTasks, canEditTasks } from '@/lib/permissions'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import TasksCalendar from './TasksCalendar'
+import GoogleCalendarSync from './GoogleCalendarSync'
 
 const APP_SCHEMA = 'app'
 
@@ -20,6 +21,8 @@ export default async function TasksCalendarPage({
 
   const canRead = await canReadTasks(company.id)
   if (!canRead) notFound()
+  
+  const canEdit = await canEditTasks(company.id)
 
   // Fetch all tasks with due dates
   const { data: tasks } = await supabase
@@ -53,6 +56,8 @@ export default async function TasksCalendarPage({
     assigned_to: string | null
     updated_at: string
   }[]
+  
+  const membersList = (profiles ?? []) as { id: string; display_name: string | null; email: string }[]
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -62,8 +67,16 @@ export default async function TasksCalendarPage({
         title="Calendar"
         description="View tasks organized by their due dates."
       />
+      <GoogleCalendarSync companyId={company.id} slug={slug} />
       <Card padding="lg">
-        <TasksCalendar slug={slug} tasks={tasksList} memberNames={memberNames} />
+        <TasksCalendar
+          companyId={company.id}
+          slug={slug}
+          tasks={tasksList}
+          memberNames={memberNames}
+          members={membersList}
+          canEdit={canEdit}
+        />
       </Card>
     </div>
   )
