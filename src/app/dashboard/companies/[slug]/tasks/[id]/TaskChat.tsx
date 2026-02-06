@@ -65,6 +65,7 @@ export default function TaskChat({
   comments,
   attachments,
   members,
+  availableDocuments,
   canEdit,
 }: {
   companyId: string
