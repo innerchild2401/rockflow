@@ -1,9 +1,15 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import Link from 'next/link'
 import { submitChatAction } from '@/app/actions/chat'
+import type { Citation } from '@/app/actions/chat'
 
-type Message = { role: 'user' | 'assistant'; content: string }
+type Message = {
+  role: 'user' | 'assistant'
+  content: string
+  citations?: Citation[]
+}
 
 export default function ChatClient({
   companyId,
@@ -36,7 +42,7 @@ export default function ChatClient({
       return
     }
     if (r.reply) {
-      setMessages((prev) => [...prev, { role: 'assistant', content: r.reply }])
+      setMessages((prev) => [...prev, { role: 'assistant', content: r.reply, citations: r.citations ?? [] }])
     }
   }
 
@@ -45,7 +51,7 @@ export default function ChatClient({
       <div className="flex min-h-[320px] flex-1 flex-col gap-4 overflow-y-auto p-4">
         {messages.length === 0 && (
           <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
-            Ask a question about your documents.
+            Ask a question. Answers are based only on your company documents and include links to sources.
           </p>
         )}
         {messages.map((m, i) => (
@@ -61,6 +67,29 @@ export default function ChatClient({
               }`}
             >
               <span className="whitespace-pre-wrap">{m.content}</span>
+              {m.role === 'assistant' && m.citations && m.citations.length > 0 && (
+                <div className="mt-3 border-t border-zinc-200 pt-2 dark:border-zinc-600">
+                  <p className="mb-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">Sources</p>
+                  <ul className="space-y-1 text-xs">
+                    {m.citations.map((cit, j) => (
+                      <li key={j}>
+                        <Link
+                          href={`/dashboard/companies/${slug}/documents/${cit.document_id}?chunk=${cit.chunk_index}`}
+                          className="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                          {cit.document_title}
+                          {cit.chunk_index >= 0 ? ` (paragraph ${cit.chunk_index + 1})` : ''}
+                        </Link>
+                        {cit.content_snippet && (
+                          <p className="mt-0.5 truncate text-zinc-500 dark:text-zinc-400" title={cit.content_snippet}>
+                            {cit.content_snippet}
+                          </p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         ))}

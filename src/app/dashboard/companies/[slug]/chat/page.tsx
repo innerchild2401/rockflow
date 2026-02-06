@@ -24,8 +24,8 @@ export default async function ChatPage({ params }: { params: Promise<{ slug: str
       <PageHeader
         backHref={`/dashboard/companies/${slug}`}
         backLabel={company.name}
-        title="Chat (RAG)"
-        description="Ask questions about your company documents. Answers are based on uploaded content (GPT-4o mini)."
+        title="Knowledge Base"
+        description="Ask questions answered only from your company documents. Answers include citations and links to source paragraphs."
       />
       <Card padding="none" className="overflow-hidden">
         <ChatClient companyId={company.id} slug={slug} />

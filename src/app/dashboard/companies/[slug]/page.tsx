@@ -8,7 +8,7 @@ const APP_SCHEMA = 'app'
 const navItems: { href: string; label: string; description: string; adminOnly?: boolean }[] = [
   { href: 'documents', label: 'Documents', description: 'Folders and procedures' },
   { href: 'tasks', label: 'Tasks', description: 'Tasks and comments' },
-  { href: 'chat', label: 'Chat', description: 'RAG Q&A on documents' },
+  { href: 'chat', label: 'Knowledge Base', description: 'Q&A from your documents' },
   { href: 'audit', label: 'Audit log', description: 'Activity history' },
   { href: 'members', label: 'Members', description: 'Team and permissions', adminOnly: true },
 ]

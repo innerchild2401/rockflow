@@ -24,7 +24,7 @@ export function Sidebar({
     { href: `${base}/documents`, label: 'Documents' },
     { href: `${base}/tasks`, label: 'Tasks' },
     { href: `${base}/tasks/calendar`, label: 'Calendar' },
-    { href: `${base}/chat`, label: 'Chat' },
+    { href: `${base}/chat`, label: 'Knowledge Base' },
     { href: `${base}/audit`, label: 'Audit log' },
     { href: `${base}/members`, label: 'Members' },
   ]
