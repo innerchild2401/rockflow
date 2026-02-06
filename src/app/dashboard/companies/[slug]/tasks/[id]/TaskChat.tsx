@@ -85,6 +85,25 @@ export default function TaskChat({
   availableDocuments: Document[]
   canEdit: boolean
 }) {
+  const router = useRouter()
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [message, setMessage] = useState('')
+  const [replyTo, setReplyTo] = useState<string | null>(null)
+  const [replyBody, setReplyBody] = useState('')
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editBody, setEditBody] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [mentionQuery, setMentionQuery] = useState<{ query: string; position: number } | null>(null)
+  const [showAttachMenu, setShowAttachMenu] = useState(false)
+  const [activityFilter, setActivityFilter] = useState<'all' | 'comments' | 'attachments'>('all')
+  const [activitySearch, setActivitySearch] = useState('')
+  const attachButtonRef = useRef<HTMLButtonElement>(null)
+  const { toasts, addToast, removeToast } = useToast()
+  
+  // Enable real-time updates
+  useTaskRealtime(taskId, true)
+  
   // Combine attachments and comments, sort by date
   type ActivityItem = 
     | { type: 'comment'; data: CommentNode }
@@ -127,24 +146,6 @@ export default function TaskChat({
   }
   
   const activities = filteredActivities
-  const router = useRouter()
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const [message, setMessage] = useState('')
-  const [replyTo, setReplyTo] = useState<string | null>(null)
-  const [replyBody, setReplyBody] = useState('')
-  const [editId, setEditId] = useState<string | null>(null)
-  const [editBody, setEditBody] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [mentionQuery, setMentionQuery] = useState<{ query: string; position: number } | null>(null)
-  const [showAttachMenu, setShowAttachMenu] = useState(false)
-  const [activityFilter, setActivityFilter] = useState<'all' | 'comments' | 'attachments'>('all')
-  const [activitySearch, setActivitySearch] = useState('')
-  const attachButtonRef = useRef<HTMLButtonElement>(null)
-  const { toasts, addToast, removeToast } = useToast()
-  
-  // Enable real-time updates
-  useTaskRealtime(taskId, true)
 
   const urgency = getUrgency(taskDueDate)
   const mentionSuggestions = mentionQuery
