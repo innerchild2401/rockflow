@@ -49,7 +49,7 @@ export default async function CompanyPage({
       />
 
       <CompanyRecapCard companyId={company.id} />
-      <CompanyFeed companyId={company.id} />
+      <CompanyFeed companyId={company.id} currentUserId={user.id} />
     </div>
   )
 }

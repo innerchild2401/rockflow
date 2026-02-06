@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { getCompanyFeedAction, postCompanyFeedAction, type FeedPost } from '@/app/actions/company-feed'
 
-export default function CompanyFeed({ companyId }: { companyId: string }) {
+export default function CompanyFeed({ companyId, currentUserId }: { companyId: string; currentUserId: string }) {
   const router = useRouter()
   const [posts, setPosts] = useState<FeedPost[]>([])
   const [loading, setLoading] = useState(true)
@@ -73,26 +73,38 @@ export default function CompanyFeed({ companyId }: { companyId: string }) {
         )}
         {!loading && posts.length > 0 && (
           <ul className="space-y-4">
-            {posts.map((post) => (
-              <li key={post.id} className="flex gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-                  {post.author_name.charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-baseline gap-2">
-                    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-                      {post.author_name}
-                    </span>
-                    <span className="text-xs text-zinc-400 dark:text-zinc-500">
-                      {new Date(post.created_at).toLocaleString()}
-                    </span>
+            {posts.map((post) => {
+              const isOwn = post.user_id === currentUserId
+              return (
+                <li
+                  key={post.id}
+                  className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+                    {post.author_name.charAt(0).toUpperCase()}
                   </div>
-                  <p className="mt-0.5 whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">
-                    {post.body}
-                  </p>
-                </div>
-              </li>
-            ))}
+                  <div
+                    className={`min-w-0 max-w-[85%] rounded-lg px-3 py-2 ${
+                      isOwn
+                        ? 'bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900'
+                        : 'bg-zinc-100 dark:bg-zinc-800'
+                    }`}
+                  >
+                    <div className={`flex flex-wrap items-baseline gap-2 ${isOwn ? 'flex-row-reverse justify-end' : ''}`}>
+                      <span className="text-sm font-medium">
+                        {post.author_name}
+                      </span>
+                      <span className="text-xs opacity-80">
+                        {new Date(post.created_at).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className={`mt-0.5 whitespace-pre-wrap text-sm ${isOwn ? 'text-right' : ''}`}>
+                      {post.body}
+                    </p>
+                  </div>
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>
@@ -103,7 +115,7 @@ export default function CompanyFeed({ companyId }: { companyId: string }) {
         {postError && (
           <p className="mb-2 text-sm text-red-600 dark:text-red-400">{postError}</p>
         )}
-        <div className="flex gap-2">
+        <div className="flex items-end gap-2">
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
@@ -119,7 +131,7 @@ export default function CompanyFeed({ companyId }: { companyId: string }) {
             size="sm"
             disabled={submitting || !body.trim()}
             isLoading={submitting}
-            className="shrink-0"
+            className="shrink-0 self-end"
           >
             Post
           </Button>
