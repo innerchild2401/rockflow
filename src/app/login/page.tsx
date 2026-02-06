@@ -12,6 +12,7 @@ function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const error = searchParams.get('error')
+  const next = searchParams.get('next') ?? '/dashboard'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -30,7 +31,7 @@ function LoginForm() {
       setMessage({ type: 'error', text: err.message })
       return
     }
-    router.push('/dashboard')
+    router.push(next)
     router.refresh()
   }
 
@@ -85,7 +86,7 @@ function LoginForm() {
         </Card>
         <p className="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
           Don&apos;t have an account?{' '}
-          <Link href="/signup" className="font-medium text-zinc-900 hover:underline dark:text-zinc-50">
+          <Link href={next !== '/dashboard' ? `/signup?next=${encodeURIComponent(next)}` : '/signup'} className="font-medium text-zinc-900 hover:underline dark:text-zinc-50">
             Sign up
           </Link>
         </p>

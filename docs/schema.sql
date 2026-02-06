@@ -475,11 +475,11 @@ CREATE POLICY company_member_permissions_update ON app.company_member_permission
 CREATE POLICY company_member_permissions_delete ON app.company_member_permissions
   FOR DELETE USING (app.can_manage_members(company_id));
 
--- Invites: admins manage; invitee can read by token (handled in app) or by email
+-- Invites: admins manage; invitee can read by token (handled in app) or by email (via profiles; do not use auth.users - anon cannot read it)
 CREATE POLICY company_invites_select ON app.company_invites
   FOR SELECT USING (
     app.is_company_member(company_id)
-    OR email = (SELECT email FROM auth.users WHERE id = app.current_user_id())
+    OR email = (SELECT email FROM app.profiles WHERE id = app.current_user_id())
   );
 CREATE POLICY company_invites_insert ON app.company_invites
   FOR INSERT WITH CHECK (app.can_manage_members(company_id));

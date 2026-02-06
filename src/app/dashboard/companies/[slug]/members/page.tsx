@@ -70,7 +70,7 @@ export default async function MembersPage({ params }: { params: Promise<{ slug: 
         description="Team and permissions for this company."
       />
       <Card>
-        <CardHeader title="Invite by email" />
+        <CardHeader title="Generate invite link" />
         <CardContent>
           <InviteForm companyId={company.id} slug={slug} />
         </CardContent>

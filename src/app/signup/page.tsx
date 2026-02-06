@@ -1,15 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const next = searchParams.get('next') ?? '/dashboard'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
@@ -39,6 +41,7 @@ export default function SignupPage() {
       type: 'success',
       text: 'Account created. Check your email to confirm, or sign in if you already confirmed.',
     })
+    router.push(next)
     router.refresh()
   }
 
@@ -103,11 +106,25 @@ export default function SignupPage() {
         </Card>
         <p className="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
           Already have an account?{' '}
-          <Link href="/login" className="font-medium text-zinc-900 hover:underline dark:text-zinc-50">
+          <Link href={next !== '/dashboard' ? `/login?next=${encodeURIComponent(next)}` : '/login'} className="font-medium text-zinc-900 hover:underline dark:text-zinc-50">
             Sign in
           </Link>
         </p>
       </div>
     </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[var(--background)]">
+          <p className="text-sm text-zinc-500">Loading…</p>
+        </div>
+      }
+    >
+      <SignupForm />
+    </Suspense>
   )
 }

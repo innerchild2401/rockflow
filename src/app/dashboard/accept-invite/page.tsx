@@ -8,7 +8,7 @@ export default async function AcceptInvitePage({ searchParams }: { searchParams:
   const { token } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login?next=/dashboard/accept-invite')
+  if (!user) redirect(`/login?next=${encodeURIComponent(`/dashboard/accept-invite?token=${token}`)}`)
   if (!token) redirect('/dashboard')
 
   const { data: invite } = await supabase.schema(APP_SCHEMA).from('company_invites').select('id, company_id, email, expires_at, accepted_at').eq('token', token).single()
