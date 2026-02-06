@@ -11,6 +11,7 @@ import { chunkText } from '@/lib/chunking'
 import { isAllowedDocumentFilename, getDocumentTitleFromFilename, MAX_UPLOAD_BYTES } from '@/lib/upload-types'
 import { extractTextFromBuffer, isBinaryExtension } from '@/lib/extract-document-text'
 import { embedTexts } from '@/lib/openai'
+import { insertAuditLog } from './audit'
 
 const APP_SCHEMA = 'app'
 
@@ -107,6 +108,16 @@ export async function createDocumentAction(
   if (data?.id && content?.trim() && (await canEditDocuments(companyId))) {
     await syncChunksForDocument(supabase, data.id, companyId, content.trim())
   }
+  if (data?.id) {
+    await insertAuditLog({
+      company_id: companyId,
+      user_id: profile?.id ?? user.id,
+      action: 'created',
+      entity_type: 'document',
+      entity_id: data.id,
+      new_value: { title: title.trim() },
+    })
+  }
   return { error: null, id: data.id }
 }
 
@@ -151,6 +162,16 @@ export async function createDocumentsFromFilesAction(
     }
     if (data?.id && (f.content?.trim()) && canEdit) {
       await syncChunksForDocument(supabase, data.id, companyId, f.content.trim())
+    }
+    if (data?.id) {
+      await insertAuditLog({
+        company_id: companyId,
+        user_id: profile?.id ?? user.id,
+        action: 'created',
+        entity_type: 'document',
+        entity_id: data.id,
+        new_value: { title, uploaded: true, file_name: f.name },
+      })
     }
     created++
   }
@@ -219,6 +240,16 @@ export async function createDocumentsFromFormDataAction(formData: FormData) {
     if (data?.id && (content?.trim()) && canEdit) {
       await syncChunksForDocument(supabase, data.id, companyId, content.trim())
     }
+    if (data?.id) {
+      await insertAuditLog({
+        company_id: companyId,
+        user_id: profile?.id ?? user.id,
+        action: 'created',
+        entity_type: 'document',
+        entity_id: data.id,
+        new_value: { title, uploaded: true, file_name: file.name },
+      })
+    }
     created++
   }
   return { error: null, created, skipped }
@@ -259,6 +290,30 @@ export async function moveDocumentAction(companyId: string, documentId: string, 
 
 export async function deleteDocumentAction(companyId: string, documentId: string) {
   if (!(await canDeleteDocuments(companyId))) return { error: 'No permission.' }
-  const { error } = await (await createClient()).schema(APP_SCHEMA).from('documents').delete().eq('id', documentId).eq('company_id', companyId)
-  return error ? { error: error.message } : { error: null }
+  const supabase = await createClient()
+  const { data: existing } = await supabase
+    .schema(APP_SCHEMA)
+    .from('documents')
+    .select('title')
+    .eq('id', documentId)
+    .eq('company_id', companyId)
+    .single()
+  const { error } = await supabase
+    .schema(APP_SCHEMA)
+    .from('documents')
+    .delete()
+    .eq('id', documentId)
+    .eq('company_id', companyId)
+  if (error) return { error: error.message }
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = user ? await supabase.schema(APP_SCHEMA).from('profiles').select('id').eq('id', user.id).single() : { data: null }
+  await insertAuditLog({
+    company_id: companyId,
+    user_id: profile?.id ?? user?.id ?? null,
+    action: 'deleted',
+    entity_type: 'document',
+    entity_id: documentId,
+    old_value: existing ? { title: existing.title } : null,
+  })
+  return { error: null }
 }
