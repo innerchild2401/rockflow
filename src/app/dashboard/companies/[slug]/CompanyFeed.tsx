@@ -115,7 +115,7 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
         {postError && (
           <p className="mb-2 text-sm text-red-600 dark:text-red-400">{postError}</p>
         )}
-        <div className="flex items-end gap-2">
+        <div className="flex items-center gap-2">
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}

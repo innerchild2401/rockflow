@@ -171,7 +171,7 @@ export default function TaskComments({
               rows={2}
               className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50"
             />
-            <div className="mt-1 flex items-end gap-2">
+            <div className="mt-1 flex items-center gap-2">
               <button
                 type="submit"
                 disabled={loading || !replyBody.trim()}
@@ -205,7 +205,7 @@ export default function TaskComments({
       )}
       {canEdit && (
         <form onSubmit={onSubmitNew} className="mt-4">
-          <div className="flex items-end gap-2">
+          <div className="flex items-center gap-2">
             <textarea
               value={newBody}
               onChange={(e) => setNewBody(e.target.value)}
