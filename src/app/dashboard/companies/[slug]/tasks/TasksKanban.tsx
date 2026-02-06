@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { updateTaskAction } from '@/app/actions/tasks'
 import { Badge } from '@/components/ui/Badge'
+import type { TaskStatus } from '@/types/database'
+
 const STATUS_LABELS: Record<string, string> = {
   todo: 'To do',
   in_progress: 'In progress',
@@ -57,15 +59,19 @@ export default function TasksKanban({
   const [draggedTask, setDraggedTask] = useState<string | null>(null)
   const [targetStatus, setTargetStatus] = useState<string | null>(null)
 
-  const columns: TaskStatus[] = ['todo', 'in_progress', 'done', 'cancelled']
+  const columns: string[] = ['todo', 'in_progress', 'done', 'cancelled']
   const tasksByStatus = columns.reduce((acc, status) => {
     acc[status] = tasks.filter((t) => t.status === status)
     return acc
-  }, {} as Record<TaskStatus, Task[]>)
+  }, {} as Record<string, Task[]>)
 
   async function handleDrop(status: string) {
     if (!draggedTask || !canEdit) return
-    await updateTaskAction(companyId, draggedTask, { status })
+    await updateTaskAction(companyId, draggedTask, { status: status as TaskStatus })
+    setDraggedTask(null)
+    setTargetStatus(null)
+    router.refresh()
+  }
     setDraggedTask(null)
     setTargetStatus(null)
     router.refresh()
