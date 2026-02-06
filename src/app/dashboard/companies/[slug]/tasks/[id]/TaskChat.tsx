@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { useToast } from '@/lib/toast'
 import { ToastContainer } from '@/components/ui/Toast'
+import { useTaskRealtime } from './useTaskRealtime'
 import AttachDocumentMenu from './AttachDocumentMenu'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -110,6 +111,9 @@ export default function TaskChat({
   const [showAttachMenu, setShowAttachMenu] = useState(false)
   const attachButtonRef = useRef<HTMLButtonElement>(null)
   const { toasts, addToast, removeToast } = useToast()
+  
+  // Enable real-time updates
+  useTaskRealtime(taskId, true)
 
   const urgency = getUrgency(taskDueDate)
   const mentionSuggestions = mentionQuery

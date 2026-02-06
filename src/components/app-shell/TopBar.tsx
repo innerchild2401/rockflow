@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { Company } from './AppShell'
 import type { Profile } from './AppShell'
+import { NotificationCenter } from '@/components/notifications/NotificationCenter'
 
 function Breadcrumbs({ slug, segment }: { slug: string | null; segment: string | null }) {
   if (!slug) return null
@@ -79,6 +80,9 @@ export function TopBar({
       </div>
 
       <div className="relative flex items-center gap-2" ref={menuRef}>
+        {currentCompany && (
+          <NotificationCenter companyId={currentCompany.id} companySlug={currentCompany.slug} />
+        )}
         <button
           type="button"
           onClick={() => setUserMenuOpen((o) => !o)}

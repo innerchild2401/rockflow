@@ -6,6 +6,7 @@ import { updateTaskAction, deleteTaskAction } from '@/app/actions/tasks'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { DatePicker } from '@/components/ui/DatePicker'
+import TaskWatchers from './TaskWatchers'
 import type { TaskStatus } from '@/types/database'
 
 const STATUSES: TaskStatus[] = ['todo', 'in_progress', 'done', 'cancelled']
@@ -223,6 +224,8 @@ export default function TaskDetail(props: {
               <div className="mt-1 whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">{description}</div>
             </div>
           )}
+
+          <TaskWatchers companyId={companyId} taskId={taskId} />
         </div>
 
         {error && (

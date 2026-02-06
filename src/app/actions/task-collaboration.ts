@@ -223,3 +223,83 @@ export async function getNotificationsAction(companyId: string, limit = 50) {
   
   return { error: null, notifications: notifications ?? [] }
 }
+
+/** Watch a task (add user to watchers). */
+export async function watchTaskAction(companyId: string, taskId: string) {
+  if (!(await canEditTasks(companyId))) return { error: 'No permission.' }
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated.' }
+  
+  const { data: profile } = await supabase.schema(APP_SCHEMA).from('profiles').select('id').eq('id', user.id).single()
+  const { error } = await supabase
+    .schema(APP_SCHEMA)
+    .from('task_watchers')
+    .insert({
+      task_id: taskId,
+      user_id: profile?.id ?? user.id,
+    })
+  
+  if (error) {
+    if (error.code === '23505') return { error: null } // Already watching
+    return { error: error.message }
+  }
+  return { error: null }
+}
+
+/** Unwatch a task (remove user from watchers). */
+export async function unwatchTaskAction(companyId: string, taskId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated.' }
+  
+  const { data: profile } = await supabase.schema(APP_SCHEMA).from('profiles').select('id').eq('id', user.id).single()
+  const { error } = await supabase
+    .schema(APP_SCHEMA)
+    .from('task_watchers')
+    .delete()
+    .eq('task_id', taskId)
+    .eq('user_id', profile?.id ?? user.id)
+  
+  return error ? { error: error.message } : { error: null }
+}
+
+/** Get watchers for a task. */
+export async function getTaskWatchersAction(companyId: string, taskId: string) {
+  const supabase = await createClient()
+  
+  const { data: watchers } = await supabase
+    .schema(APP_SCHEMA)
+    .from('task_watchers')
+    .select('user_id')
+    .eq('task_id', taskId)
+  
+  const userIds = watchers?.map((w) => w.user_id) ?? []
+  if (userIds.length === 0) return { error: null, watchers: [] }
+  
+  const { data: profiles } = await supabase
+    .schema(APP_SCHEMA)
+    .from('profiles')
+    .select('id, display_name, email')
+    .in('id', userIds)
+  
+  return { error: null, watchers: profiles ?? [] }
+}
+
+/** Check if current user is watching a task. */
+export async function isWatchingTaskAction(companyId: string, taskId: string): Promise<boolean> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return false
+  
+  const { data: profile } = await supabase.schema(APP_SCHEMA).from('profiles').select('id').eq('id', user.id).single()
+  const { data } = await supabase
+    .schema(APP_SCHEMA)
+    .from('task_watchers')
+    .select('user_id')
+    .eq('task_id', taskId)
+    .eq('user_id', profile?.id ?? user.id)
+    .single()
+  
+  return !!data
+}
