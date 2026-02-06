@@ -6,8 +6,9 @@ import { embedText, chat as openaiChat } from '@/lib/openai'
 import type { ChatMessage } from '@/lib/openai'
 
 const APP_SCHEMA = 'app'
-const MATCH_COUNT = 10
-const MATCH_THRESHOLD = 0.2 // Minimum similarity (0–1); filters weak matches
+const MATCH_COUNT = 8 // Chunks retrieved for context
+const MATCH_THRESHOLD = 0.25 // Minimum similarity (0–1); filters weak matches
+const MAX_CITATIONS = 3 // Only show top N sources by similarity
 
 export type Citation = {
   document_id: string
@@ -63,13 +64,16 @@ export async function submitChatAction(
     }
   }
 
-  const citations: Citation[] = chunkRows.map((c) => ({
-    document_id: c.document_id,
-    document_title: documentTitles[c.document_id] ?? 'Untitled',
-    chunk_index: c.chunk_index,
-    content_snippet: c.content.slice(0, 200) + (c.content.length > 200 ? '…' : ''),
-    similarity: c.similarity,
-  }))
+  // Chunks are already ordered by similarity (best first). Keep only top N for display.
+  const citations: Citation[] = chunkRows
+    .map((c) => ({
+      document_id: c.document_id,
+      document_title: documentTitles[c.document_id] ?? 'Untitled',
+      chunk_index: c.chunk_index,
+      content_snippet: c.content.slice(0, 200) + (c.content.length > 200 ? '…' : ''),
+      similarity: c.similarity,
+    }))
+    .slice(0, MAX_CITATIONS)
 
   const contextParts = chunkRows.map((c) => c.content)
   const context = contextParts.length
