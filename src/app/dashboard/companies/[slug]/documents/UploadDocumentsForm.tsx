@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createDocumentsFromFormDataAction } from '@/app/actions/documents'
-import { isAllowedDocumentFilename, UPLOAD_ACCEPT, UPLOAD_EXTENSIONS_LABEL } from '@/lib/upload-types'
+import { isAllowedDocumentFilename, UPLOAD_ACCEPT, UPLOAD_EXTENSIONS_LABEL, MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL } from '@/lib/upload-types'
 
 export default function UploadDocumentsForm(props: {
   companyId: string
@@ -31,6 +31,10 @@ export default function UploadDocumentsForm(props: {
         skipped.push(file.name)
         continue
       }
+      if (file.size > MAX_UPLOAD_BYTES) {
+        skipped.push(`${file.name} (over ${MAX_UPLOAD_LABEL} limit)`)
+        continue
+      }
       validFiles.push(file)
     }
     if (validFiles.length === 0) {
@@ -42,13 +46,18 @@ export default function UploadDocumentsForm(props: {
     formData.set('companyId', props.companyId)
     formData.set('folderId', folderId || '')
     validFiles.forEach((f) => formData.append('files', f))
-    const r = await createDocumentsFromFormDataAction(formData)
-    setLoading(false)
-    if (r.error) setError(r.error)
-    else {
-      setResult({ created: r.created, skipped: [...skipped, ...(r.skipped ?? [])] })
-      if (inputRef.current) inputRef.current.value = ''
-      router.refresh()
+    try {
+      const r = await createDocumentsFromFormDataAction(formData)
+      setLoading(false)
+      if (r.error) setError(r.error)
+      else {
+        setResult({ created: r.created, skipped: [...skipped, ...(r.skipped ?? [])] })
+        if (inputRef.current) inputRef.current.value = ''
+        router.refresh()
+      }
+    } catch (e) {
+      setLoading(false)
+      setError(`Upload failed. Files must be under ${MAX_UPLOAD_LABEL} each, or the connection was interrupted. Try a smaller file.`)
     }
   }
 
@@ -75,7 +84,7 @@ export default function UploadDocumentsForm(props: {
   return (
     <div className="mt-4 space-y-4">
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        Allowed types: <strong>{UPLOAD_EXTENSIONS_LABEL}</strong>. You can select or drop multiple files at once.
+        Allowed types: <strong>{UPLOAD_EXTENSIONS_LABEL}</strong>. Max <strong>{MAX_UPLOAD_LABEL}</strong> per file. Multiple files supported.
       </p>
       {props.folders.length > 0 && (
         <div>
@@ -117,7 +126,7 @@ export default function UploadDocumentsForm(props: {
           Drop files here or click to browse
         </span>
         <span className="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">
-          Multiple files supported
+          Max {MAX_UPLOAD_LABEL} per file
         </span>
       </label>
       {error && (

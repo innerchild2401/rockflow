@@ -128,14 +128,19 @@ CREATE TABLE app.folders (
 
 CREATE INDEX idx_folders_company ON app.folders(company_id);
 CREATE INDEX idx_folders_parent ON app.folders(parent_folder_id);
+-- One folder name per parent (root = same parent sentinel)
+CREATE UNIQUE INDEX idx_folders_name_per_parent ON app.folders (company_id, COALESCE(parent_folder_id, '00000000-0000-0000-0000-000000000000'::uuid), LOWER(TRIM(name)));
 
--- Documents (procedures; optional folder)
+-- Documents (procedures; optional folder; file metadata for uploads)
 CREATE TABLE app.documents (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES app.companies(id) ON DELETE CASCADE,
   folder_id UUID REFERENCES app.folders(id) ON DELETE SET NULL,
   title TEXT NOT NULL,
   content TEXT NOT NULL DEFAULT '',
+  file_name TEXT,
+  file_size_bytes BIGINT,
+  file_type TEXT,
   created_by UUID NOT NULL REFERENCES app.profiles(id) ON DELETE RESTRICT,
   updated_by UUID REFERENCES app.profiles(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -145,6 +150,8 @@ CREATE TABLE app.documents (
 CREATE INDEX idx_documents_company ON app.documents(company_id);
 CREATE INDEX idx_documents_folder ON app.documents(folder_id);
 CREATE INDEX idx_documents_updated ON app.documents(company_id, updated_at DESC);
+-- One document title per folder per company (root = same folder sentinel)
+CREATE UNIQUE INDEX idx_documents_title_per_folder ON app.documents (company_id, COALESCE(folder_id, '00000000-0000-0000-0000-000000000000'::uuid), LOWER(TRIM(title)));
 
 -- Document chunks for RAG (pgvector)
 CREATE TABLE app.document_chunks (
@@ -628,14 +635,15 @@ $$;
 -- =============================================================================
 -- GRANTS: Allow Supabase client roles to use the app schema (required for custom schemas)
 -- Run this block in Supabase SQL Editor if you get "permission denied for schema app"
+-- anon, authenticated = browser/server with anon key; service_role = server with service role key (e.g. create company)
 -- =============================================================================
-GRANT USAGE ON SCHEMA app TO anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA app TO anon, authenticated;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA app TO anon, authenticated;
-GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA app TO anon, authenticated;
-ALTER DEFAULT PRIVILEGES IN SCHEMA app GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO anon, authenticated;
-ALTER DEFAULT PRIVILEGES IN SCHEMA app GRANT USAGE, SELECT ON SEQUENCES TO anon, authenticated;
-ALTER DEFAULT PRIVILEGES IN SCHEMA app GRANT EXECUTE ON FUNCTIONS TO anon, authenticated;
+GRANT USAGE ON SCHEMA app TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA app TO anon, authenticated, service_role;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA app TO anon, authenticated, service_role;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA app TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA app GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA app GRANT USAGE, SELECT ON SEQUENCES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA app GRANT EXECUTE ON FUNCTIONS TO anon, authenticated, service_role;
 
 -- =============================================================================
 -- NOTES FOR APPLICATION

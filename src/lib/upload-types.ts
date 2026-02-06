@@ -3,6 +3,10 @@
  * Only text-based formats are supported (content is stored in documents.content and used for RAG).
  */
 
+/** Max file size per file (25 MB). Must match or be below Next.js serverActions.bodySizeLimit. */
+export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024
+export const MAX_UPLOAD_LABEL = '25 MB'
+
 export const ALLOWED_DOCUMENT_EXTENSIONS = [
   '.txt',
   '.md',

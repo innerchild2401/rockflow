@@ -5,7 +5,6 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardHeader, CardContent } from '@/components/ui/Card'
 import DocumentsList from './DocumentsList'
 import CreateFolderForm from './CreateFolderForm'
-import CreateDocumentForm from './CreateDocumentForm'
 import UploadDocumentsForm from './UploadDocumentsForm'
 
 const APP_SCHEMA = 'app'
@@ -35,12 +34,12 @@ export default async function DocumentsPage({ params }: { params: Promise<{ slug
   const { data: documents } = await supabase
     .schema(APP_SCHEMA)
     .from('documents')
-    .select('id, folder_id, title, updated_at')
+    .select('id, folder_id, title, updated_at, file_name, file_size_bytes')
     .eq('company_id', company.id)
     .order('updated_at', { ascending: false })
 
   const foldersList = (folders ?? []) as { id: string; parent_folder_id: string | null; name: string }[]
-  const documentsList = (documents ?? []) as { id: string; folder_id: string | null; title: string; updated_at: string }[]
+  const documentsList = (documents ?? []) as { id: string; folder_id: string | null; title: string; updated_at: string; file_name: string | null; file_size_bytes: number | null }[]
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
@@ -61,20 +60,12 @@ export default async function DocumentsPage({ params }: { params: Promise<{ slug
       )}
 
       {canCreate && (
-        <>
-          <Card>
-            <CardHeader title="Upload documents" description="TXT, MD, CSV, JSON, HTML, XML, LOG, YAML, PDF, DOC, DOCX. Multiple files supported." />
-            <CardContent>
-              <UploadDocumentsForm companyId={company.id} slug={slug} folders={foldersList} />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader title="New document" />
-            <CardContent>
-              <CreateDocumentForm companyId={company.id} slug={slug} folders={foldersList} />
-            </CardContent>
-          </Card>
-        </>
+        <Card>
+          <CardHeader title="Upload documents" description="TXT, MD, CSV, JSON, HTML, XML, LOG, YAML, PDF, DOC, DOCX. Max 25 MB per file. Multiple files supported." />
+          <CardContent>
+            <UploadDocumentsForm companyId={company.id} slug={slug} folders={foldersList} />
+          </CardContent>
+        </Card>
       )}
 
       <Card padding="none">

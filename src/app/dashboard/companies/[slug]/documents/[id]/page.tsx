@@ -1,9 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import { canReadDocuments, canEditDocuments } from '@/lib/permissions'
+import { canReadDocuments, canEditDocuments, canDeleteDocuments } from '@/lib/permissions'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
-import DocumentEditor from './DocumentEditor'
+import DocumentView from './DocumentView'
 
 const APP_SCHEMA = 'app'
 
@@ -24,13 +24,24 @@ export default async function DocumentPage({
   const { data: doc } = await supabase
     .schema(APP_SCHEMA)
     .from('documents')
-    .select('id, title, content, folder_id, updated_at')
+    .select('id, title, content, folder_id, updated_at, file_name, file_size_bytes, file_type')
     .eq('id', id)
     .eq('company_id', company.id)
     .single()
 
   if (!doc) notFound()
+
   const canEdit = await canEditDocuments(company.id)
+  const canDelete = await canDeleteDocuments(company.id)
+
+  const { data: folders } = await supabase
+    .schema(APP_SCHEMA)
+    .from('folders')
+    .select('id, name')
+    .eq('company_id', company.id)
+    .order('name')
+
+  const foldersList = (folders ?? []) as { id: string; name: string }[]
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -40,13 +51,19 @@ export default async function DocumentPage({
         title={doc.title}
       />
       <Card>
-        <DocumentEditor
+        <DocumentView
           companyId={company.id}
           documentId={doc.id}
           slug={slug}
-          initialTitle={doc.title}
-          initialContent={doc.content}
+          title={doc.title}
+          content={doc.content}
+          fileName={doc.file_name}
+          fileSizeBytes={doc.file_size_bytes}
+          fileType={doc.file_type}
+          currentFolderId={doc.folder_id}
+          folders={foldersList}
           canEdit={canEdit}
+          canDelete={canDelete}
         />
       </Card>
     </div>

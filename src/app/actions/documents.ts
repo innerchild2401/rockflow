@@ -8,7 +8,7 @@ import {
   canManageFolders,
 } from '@/lib/permissions'
 import { chunkText } from '@/lib/chunking'
-import { isAllowedDocumentFilename, getDocumentTitleFromFilename } from '@/lib/upload-types'
+import { isAllowedDocumentFilename, getDocumentTitleFromFilename, MAX_UPLOAD_BYTES } from '@/lib/upload-types'
 import { extractTextFromBuffer, isBinaryExtension } from '@/lib/extract-document-text'
 import { embedTexts } from '@/lib/openai'
 
@@ -50,11 +50,23 @@ export async function createFolderAction(
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated.', id: null }
+  const trimmed = name.trim()
+  if (!trimmed) return { error: 'Folder name is required.', id: null }
+  const { data: existing } = await supabase
+    .schema(APP_SCHEMA)
+    .from('folders')
+    .select('id')
+    .eq('company_id', companyId)
+    .is('parent_folder_id', parentFolderId)
+    .ilike('name', trimmed)
+    .limit(1)
+    .maybeSingle()
+  if (existing) return { error: 'A folder with this name already exists here.', id: null }
   const { data: profile } = await supabase.schema(APP_SCHEMA).from('profiles').select('id').eq('id', user.id).single()
   const { data, error } = await supabase
     .schema(APP_SCHEMA)
     .from('folders')
-    .insert({ company_id: companyId, parent_folder_id: parentFolderId, name: name.trim(), created_by: profile?.id ?? user.id })
+    .insert({ company_id: companyId, parent_folder_id: parentFolderId, name: trimmed, created_by: profile?.id ?? user.id })
     .select('id')
     .single()
   if (error) return { error: error.message, id: null }
@@ -133,7 +145,10 @@ export async function createDocumentsFromFilesAction(
       })
       .select('id')
       .single()
-    if (error) return { error: error.message, created, skipped }
+    if (error) {
+      if (error.code === '23505') return { error: `A document named "${title}" already exists in this folder.`, created, skipped }
+      return { error: error.message, created, skipped }
+    }
     if (data?.id && (f.content?.trim()) && canEdit) {
       await syncChunksForDocument(supabase, data.id, companyId, f.content.trim())
     }
@@ -164,6 +179,10 @@ export async function createDocumentsFromFormDataAction(formData: FormData) {
       skipped.push(file?.name ?? 'unknown')
       continue
     }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      skipped.push(`${file.name} (over ${MAX_UPLOAD_BYTES / 1024 / 1024} MB limit)`)
+      continue
+    }
     let content: string
     try {
       const arrayBuffer = await file.arrayBuffer()
@@ -177,7 +196,7 @@ export async function createDocumentsFromFormDataAction(formData: FormData) {
       skipped.push(file.name)
       continue
     }
-    const title = getDocumentTitleFromFilename(file.name).trim() || file.name
+    let title = getDocumentTitleFromFilename(file.name).trim() || file.name
     const { data, error } = await supabase
       .schema(APP_SCHEMA)
       .from('documents')
@@ -186,11 +205,17 @@ export async function createDocumentsFromFormDataAction(formData: FormData) {
         folder_id: folderId,
         title,
         content: content ?? '',
+        file_name: file.name,
+        file_size_bytes: file.size,
+        file_type: file.type || null,
         created_by: profile?.id ?? user.id,
       })
       .select('id')
       .single()
-    if (error) return { error: error.message, created, skipped }
+    if (error) {
+      if (error.code === '23505') return { error: `A document named "${title}" already exists in this folder. Rename the file or choose a different folder.`, created, skipped }
+      return { error: error.message, created, skipped }
+    }
     if (data?.id && (content?.trim()) && canEdit) {
       await syncChunksForDocument(supabase, data.id, companyId, content.trim())
     }
@@ -219,6 +244,17 @@ export async function updateDocumentAction(
   if (error) return { error: error.message }
   await syncChunksForDocument(supabase, documentId, companyId, content)
   return { error: null }
+}
+
+export async function moveDocumentAction(companyId: string, documentId: string, folderId: string | null) {
+  if (!(await canEditDocuments(companyId))) return { error: 'No permission.' }
+  const { error } = await (await createClient())
+    .schema(APP_SCHEMA)
+    .from('documents')
+    .update({ folder_id: folderId, updated_at: new Date().toISOString() })
+    .eq('id', documentId)
+    .eq('company_id', companyId)
+  return error ? { error: error.message } : { error: null }
 }
 
 export async function deleteDocumentAction(companyId: string, documentId: string) {
