@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
+import { SendIcon } from '@/components/ui/SendIcon'
 import { getCompanyFeedAction, postCompanyFeedAction, type FeedPost } from '@/app/actions/company-feed'
 
 export default function CompanyFeed({ companyId, currentUserId }: { companyId: string; currentUserId: string }) {
@@ -126,15 +126,18 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
             rows={2}
             className="min-w-0 flex-1 resize-none rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50"
           />
-          <Button
+          <button
             type="submit"
-            size="sm"
             disabled={submitting || !body.trim()}
-            isLoading={submitting}
-            className="shrink-0 self-end"
+            aria-label="Post"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
           >
-            Post
-          </Button>
+            {submitting ? (
+              <span className="text-xs">…</span>
+            ) : (
+              <SendIcon className="h-5 w-5" />
+            )}
+          </button>
         </div>
         <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
           Ctrl+Enter to send

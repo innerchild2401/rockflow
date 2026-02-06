@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { submitChatAction } from '@/app/actions/chat'
 import type { Citation } from '@/app/actions/chat'
+import { SendIcon } from '@/components/ui/SendIcon'
 
 type Message = {
   role: 'user' | 'assistant'
@@ -109,7 +110,7 @@ export default function ChatClient({
             {error}
           </div>
         )}
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <input
             type="text"
             value={input}
@@ -121,9 +122,10 @@ export default function ChatClient({
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+            aria-label="Send"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
           >
-            Send
+            <SendIcon className="h-5 w-5" />
           </button>
         </div>
       </form>

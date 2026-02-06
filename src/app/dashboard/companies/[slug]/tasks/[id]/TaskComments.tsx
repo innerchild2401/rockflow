@@ -7,6 +7,7 @@ import {
   updateTaskCommentAction,
   deleteTaskCommentAction,
 } from '@/app/actions/tasks'
+import { SendIcon } from '@/components/ui/SendIcon'
 
 type CommentNode = {
   id: string
@@ -170,13 +171,14 @@ export default function TaskComments({
               rows={2}
               className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50"
             />
-            <div className="mt-1 flex gap-2">
+            <div className="mt-1 flex items-end gap-2">
               <button
                 type="submit"
                 disabled={loading || !replyBody.trim()}
-                className="rounded bg-zinc-900 px-2 py-1 text-sm text-white dark:bg-zinc-100 dark:text-zinc-900"
+                aria-label="Reply"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
               >
-                Reply
+                <SendIcon className="h-4 w-4" />
               </button>
               <button
                 type="button"
@@ -203,20 +205,23 @@ export default function TaskComments({
       )}
       {canEdit && (
         <form onSubmit={onSubmitNew} className="mt-4">
-          <textarea
-            value={newBody}
-            onChange={(e) => setNewBody(e.target.value)}
-            placeholder="Add a comment…"
-            rows={3}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50"
-          />
-          <button
-            type="submit"
-            disabled={loading || !newBody.trim()}
-            className="mt-2 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-          >
-            Post comment
-          </button>
+          <div className="flex items-end gap-2">
+            <textarea
+              value={newBody}
+              onChange={(e) => setNewBody(e.target.value)}
+              placeholder="Add a comment…"
+              rows={3}
+              className="min-w-0 flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50"
+            />
+            <button
+              type="submit"
+              disabled={loading || !newBody.trim()}
+              aria-label="Post comment"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              <SendIcon className="h-5 w-5" />
+            </button>
+          </div>
         </form>
       )}
       <div className="mt-6 space-y-4">

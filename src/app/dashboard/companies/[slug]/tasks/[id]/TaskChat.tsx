@@ -6,8 +6,8 @@ import Link from 'next/link'
 import { createTaskCommentAction } from '@/app/actions/tasks'
 import { attachDocumentToTaskAction, detachDocumentFromTaskAction } from '@/app/actions/task-collaboration'
 import { getMentionSuggestions } from '@/lib/parse-mentions'
-import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { SendIcon } from '@/components/ui/SendIcon'
 import { useToast } from '@/lib/toast'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useTaskRealtime } from './useTaskRealtime'
@@ -488,9 +488,14 @@ export default function TaskChat({
                 </div>
                 <span className="text-xs text-zinc-500 dark:text-zinc-400">Type @ to mention</span>
               </div>
-              <Button type="submit" size="sm" disabled={loading || !message.trim()} isLoading={loading} className="w-full sm:w-auto">
-                Send
-              </Button>
+              <button
+                type="submit"
+                disabled={loading || !message.trim()}
+                aria-label="Send"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 sm:h-10 sm:w-10"
+              >
+                {loading ? <span className="text-xs">…</span> : <SendIcon className="h-5 w-5" />}
+              </button>
             </div>
           </form>
         </div>
