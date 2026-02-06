@@ -1,16 +1,24 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import { canReadDocuments, canManageFolders, canCreateDocuments, canEditDocuments } from '@/lib/permissions'
+import { canReadDocuments, canManageFolders, canCreateDocuments } from '@/lib/permissions'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { Card, CardHeader, CardContent } from '@/components/ui/Card'
+import { Card } from '@/components/ui/Card'
+import DocumentsToolbar from './DocumentsToolbar'
 import DocumentsList from './DocumentsList'
-import CreateFolderForm from './CreateFolderForm'
-import UploadDocumentsForm from './UploadDocumentsForm'
 
 const APP_SCHEMA = 'app'
 
-export default async function DocumentsPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function DocumentsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ folder?: string }>
+}) {
   const { slug } = await params
+  const { folder: folderIdParam } = await searchParams
+  const currentFolderId = folderIdParam && folderIdParam.trim() ? folderIdParam.trim() : null
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
@@ -24,55 +32,81 @@ export default async function DocumentsPage({ params }: { params: Promise<{ slug
   const canManageFolder = await canManageFolders(company.id)
   const canCreate = await canCreateDocuments(company.id)
 
-  const { data: folders } = await supabase
+  let currentFolderName: string | null = null
+  if (currentFolderId) {
+    const { data: folder } = await supabase
+      .schema(APP_SCHEMA)
+      .from('folders')
+      .select('id, name')
+      .eq('id', currentFolderId)
+      .eq('company_id', company.id)
+      .single()
+    if (folder) currentFolderName = folder.name
+    else notFound()
+  }
+
+  const foldersQuery = supabase
     .schema(APP_SCHEMA)
     .from('folders')
-    .select('id, parent_folder_id, name')
+    .select('id, name')
     .eq('company_id', company.id)
     .order('name')
 
-  const { data: documents } = await supabase
+  if (currentFolderId) {
+    foldersQuery.eq('parent_folder_id', currentFolderId)
+  } else {
+    foldersQuery.is('parent_folder_id', null)
+  }
+  const { data: subfolders } = await foldersQuery
+
+  const documentsQuery = supabase
     .schema(APP_SCHEMA)
     .from('documents')
-    .select('id, folder_id, title, updated_at, file_name, file_size_bytes')
+    .select('id, title, updated_at, file_name, file_size_bytes')
     .eq('company_id', company.id)
     .order('updated_at', { ascending: false })
 
-  const foldersList = (folders ?? []) as { id: string; parent_folder_id: string | null; name: string }[]
-  const documentsList = (documents ?? []) as { id: string; folder_id: string | null; title: string; updated_at: string; file_name: string | null; file_size_bytes: number | null }[]
+  if (currentFolderId) {
+    documentsQuery.eq('folder_id', currentFolderId)
+  } else {
+    documentsQuery.is('folder_id', null)
+  }
+  const { data: documents } = await documentsQuery
+
+  const subfoldersList = (subfolders ?? []) as { id: string; name: string }[]
+  const documentsList = (documents ?? []) as {
+    id: string
+    title: string
+    updated_at: string
+    file_name: string | null
+    file_size_bytes: number | null
+  }[]
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
         backHref={`/dashboard/companies/${slug}`}
         backLabel={company.name}
         title="Documents"
-        description="Folders and procedures for your company."
+        description="Browse folders and open documents. Upload or create folders from the toolbar."
       />
 
-      {canManageFolder && (
-        <Card>
-          <CardHeader title="New folder" />
-          <CardContent>
-            <CreateFolderForm companyId={company.id} slug={slug} parentFolderId={null} folders={foldersList} />
-          </CardContent>
-        </Card>
-      )}
-
-      {canCreate && (
-        <Card>
-          <CardHeader title="Upload documents" description="TXT, MD, CSV, JSON, HTML, XML, LOG, YAML, PDF, DOC, DOCX. Max 25 MB per file. Multiple files supported." />
-          <CardContent>
-            <UploadDocumentsForm companyId={company.id} slug={slug} folders={foldersList} />
-          </CardContent>
-        </Card>
-      )}
+      <DocumentsToolbar
+        slug={slug}
+        companyId={company.id}
+        currentFolderId={currentFolderId}
+        currentFolderName={currentFolderName}
+        canManageFolder={canManageFolder}
+        canCreate={canCreate}
+      />
 
       <Card padding="none">
-        <div className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-700">
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">All documents</h2>
-        </div>
-        <DocumentsList slug={slug} folders={foldersList} documents={documentsList} canEdit={await canEditDocuments(company.id)} />
+        <DocumentsList
+          slug={slug}
+          subfolders={subfoldersList}
+          documents={documentsList}
+          currentFolderId={currentFolderId}
+        />
       </Card>
     </div>
   )

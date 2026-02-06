@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { FolderIcon, DocumentIcon } from './DocumentsToolbar'
 
 function formatFileSize(bytes: number | null | undefined): string {
   if (bytes == null || bytes === 0) return ''
@@ -9,52 +10,67 @@ function formatFileSize(bytes: number | null | undefined): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export default function DocumentsList({ slug, folders, documents, canEdit }: { slug: string; folders: { id: string; parent_folder_id: string | null; name: string }[]; documents: { id: string; folder_id: string | null; title: string; updated_at: string; file_name: string | null; file_size_bytes: number | null }[]; canEdit: boolean }) {
-  const byFolder = documents.reduce((acc: Record<string, typeof documents>, d) => {
-    const key = d.folder_id ?? '_root'
-    if (!acc[key]) acc[key] = []
-    acc[key].push(d)
-    return acc
-  }, {})
-  const rootDocs = byFolder['_root'] ?? []
+export default function DocumentsList({
+  slug,
+  subfolders,
+  documents,
+  currentFolderId,
+}: {
+  slug: string
+  subfolders: { id: string; name: string }[]
+  documents: { id: string; title: string; updated_at: string; file_name: string | null; file_size_bytes: number | null }[]
+  currentFolderId: string | null
+}) {
+  const baseHref = `/dashboard/companies/${slug}/documents`
   const formatDate = (s: string) => new Date(s).toLocaleDateString()
+  const isEmpty = subfolders.length === 0 && documents.length === 0
 
   return (
     <div className="divide-y divide-zinc-200 dark:divide-zinc-700">
-      {rootDocs.length > 0 && (
-        <div className="px-6 py-4">
-          <p className="mb-2 text-xs font-medium uppercase text-zinc-400 dark:text-zinc-500">No folder</p>
-          <ul className="space-y-1">
-            {rootDocs.map((d) => (
-              <li key={d.id}>
-                <Link href={`/dashboard/companies/${slug}/documents/${d.id}`} className="text-sm font-medium text-zinc-900 hover:underline dark:text-zinc-50">{d.title}</Link>
-                <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">{formatDate(d.updated_at)}{d.file_size_bytes != null ? ` · ${formatFileSize(d.file_size_bytes)}` : ''}</span>
-              </li>
-            ))}
-          </ul>
+      {currentFolderId && (
+        <Link
+          href={baseHref}
+          className="flex items-center gap-3 px-4 py-3 text-sm text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800/50"
+        >
+          <svg className="h-5 w-5 shrink-0 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Up to Documents
+        </Link>
+      )}
+
+      {subfolders.map((f) => (
+        <Link
+          key={f.id}
+          href={`${baseHref}?folder=${f.id}`}
+          className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-zinc-900 hover:bg-zinc-50 dark:text-zinc-100 dark:hover:bg-zinc-800/50"
+        >
+          <FolderIcon />
+          <span className="min-w-0 flex-1 truncate">{f.name}</span>
+          <span className="text-zinc-400 dark:text-zinc-500" aria-hidden>Folder</span>
+        </Link>
+      ))}
+
+      {documents.map((d) => (
+        <Link
+          key={d.id}
+          href={`${baseHref}/${d.id}`}
+          className="flex items-center gap-3 px-4 py-3 text-sm text-zinc-900 hover:bg-zinc-50 dark:text-zinc-100 dark:hover:bg-zinc-800/50"
+        >
+          <DocumentIcon />
+          <span className="min-w-0 flex-1 truncate">{d.title}</span>
+          <span className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
+            {formatDate(d.updated_at)}
+            {d.file_size_bytes != null ? ` · ${formatFileSize(d.file_size_bytes)}` : ''}
+          </span>
+        </Link>
+      ))}
+
+      {isEmpty && (
+        <div className="px-4 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
+          {currentFolderId ? 'No documents in this folder.' : 'No folders or documents yet. Create a folder or upload files.'}
         </div>
       )}
-      {folders.map((f) => {
-        const docs = byFolder[f.id] ?? []
-        return (
-          <div key={f.id} className="px-6 py-4">
-            <p className="mb-2 text-xs font-medium uppercase text-zinc-400 dark:text-zinc-500">{f.name}</p>
-            <ul className="space-y-1">
-              {docs.length === 0 ? (
-                <li className="text-xs text-zinc-400 dark:text-zinc-500">No documents in this folder</li>
-              ) : (
-                docs.map((d) => (
-                  <li key={d.id}>
-                    <Link href={`/dashboard/companies/${slug}/documents/${d.id}`} className="text-sm font-medium text-zinc-900 hover:underline dark:text-zinc-50">{d.title}</Link>
-                    <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">{formatDate(d.updated_at)}{d.file_size_bytes != null ? ` · ${formatFileSize(d.file_size_bytes)}` : ''}</span>
-                  </li>
-                ))
-              )}
-            </ul>
-          </div>
-        )
-      })}
-      {documents.length === 0 && folders.length === 0 && <div className="px-6 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">No documents or folders yet.</div>}
     </div>
   )
 }
