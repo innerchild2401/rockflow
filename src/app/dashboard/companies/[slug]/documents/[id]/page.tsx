@@ -9,8 +9,13 @@ const APP_SCHEMA = 'app'
 
 export default async function DocumentPage({
   params,
-}: { params: Promise<{ slug: string; id: string }> }) {
+  searchParams,
+}: { 
+  params: Promise<{ slug: string; id: string }>
+  searchParams: Promise<{ returnTo?: string }>
+}) {
   const { slug, id } = await params
+  const { returnTo } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
@@ -43,11 +48,14 @@ export default async function DocumentPage({
 
   const foldersList = (folders ?? []) as { id: string; name: string }[]
 
+  const backHref = returnTo || `/dashboard/companies/${slug}/documents`
+  const backLabel = returnTo ? 'Back' : 'Documents'
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <PageHeader
-        backHref={`/dashboard/companies/${slug}/documents`}
-        backLabel="Documents"
+        backHref={backHref}
+        backLabel={backLabel}
         title={doc.title}
       />
       <Card>

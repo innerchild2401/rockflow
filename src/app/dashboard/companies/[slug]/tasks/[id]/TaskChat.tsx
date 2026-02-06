@@ -51,6 +51,8 @@ type Document = {
   id: string
   title: string
   file_name: string | null
+  attached_by?: string
+  attached_at?: string | null
 }
 
 export default function TaskChat({
@@ -82,6 +84,19 @@ export default function TaskChat({
   availableDocuments: Document[]
   canEdit: boolean
 }) {
+  // Combine attachments and comments, sort by date
+  type ActivityItem = 
+    | { type: 'comment'; data: CommentNode }
+    | { type: 'attachment'; data: Document }
+  
+  const activities: ActivityItem[] = [
+    ...attachments.map((a) => ({ type: 'attachment' as const, data: a })),
+    ...comments.map((c) => ({ type: 'comment' as const, data: c })),
+  ].sort((a, b) => {
+    const aDate = a.type === 'attachment' ? (a.data.attached_at || '') : a.data.created_at
+    const bDate = b.type === 'attachment' ? (b.data.attached_at || '') : b.data.created_at
+    return new Date(aDate).getTime() - new Date(bDate).getTime()
+  })
   const router = useRouter()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [message, setMessage] = useState('')
@@ -352,11 +367,14 @@ export default function TaskChat({
             {attachments.map((doc) => (
               <div key={doc.id} className="flex items-center gap-1 rounded bg-zinc-100 px-2 py-1 text-xs dark:bg-zinc-800">
                 <Link
-                  href={`/dashboard/companies/${slug}/documents/${doc.id}`}
+                  href={`/dashboard/companies/${slug}/documents/${doc.id}?returnTo=/dashboard/companies/${slug}/tasks/${taskId}`}
                   className="text-zinc-700 hover:underline dark:text-zinc-300"
                 >
                   {doc.file_name || doc.title}
                 </Link>
+                {doc.attached_by && (
+                  <span className="text-zinc-500 dark:text-zinc-400">by {doc.attached_by}</span>
+                )}
                 {canEdit && (
                   <button
                     type="button"
@@ -381,10 +399,42 @@ export default function TaskChat({
           </div>
         )}
         <div className="space-y-4">
-          {comments.map((c) => (
-            <CommentBlock key={c.id} c={c} depth={0} />
-          ))}
-          {comments.length === 0 && (
+          {activities.map((activity, idx) => {
+            if (activity.type === 'attachment') {
+              const doc = activity.data
+              return (
+                <div key={`attach-${doc.id}`} className="flex items-start gap-3 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                        {doc.attached_by || 'Someone'}
+                      </span>
+                      <span className="text-xs text-zinc-400 dark:text-zinc-500">attached</span>
+                      <Link
+                        href={`/dashboard/companies/${slug}/documents/${doc.id}?returnTo=/dashboard/companies/${slug}/tasks/${taskId}`}
+                        className="text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
+                      >
+                        {doc.file_name || doc.title}
+                      </Link>
+                    </div>
+                    {doc.attached_at && (
+                      <span className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+                        {new Date(doc.attached_at).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            } else {
+              return <CommentBlock key={activity.data.id} c={activity.data} depth={0} />
+            }
+          })}
+          {activities.length === 0 && (
             <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">No comments yet. Start the conversation!</p>
           )}
         </div>

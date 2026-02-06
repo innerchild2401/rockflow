@@ -81,17 +81,32 @@ export default async function TaskPage({
     : { data: [] }
   const membersList = (memberProfiles ?? []) as { id: string; display_name: string | null; email: string }[]
 
-  // Get task attachments
+  // Get task attachments with metadata
   const { data: attachments } = await supabase
     .schema(APP_SCHEMA)
     .from('task_attachments')
-    .select('document_id')
+    .select('document_id, attached_by, created_at')
     .eq('task_id', id)
+    .order('created_at', { ascending: true })
   
   const documentIds = attachments?.map((a) => a.document_id) ?? []
   const { data: attachedDocuments } = documentIds.length
     ? await supabase.schema(APP_SCHEMA).from('documents').select('id, title, file_name').in('id', documentIds)
     : { data: [] }
+  
+  // Map attachments with metadata
+  const attachmentsWithMeta = (attachedDocuments ?? []).map((doc) => {
+    const attachment = attachments?.find((a) => a.document_id === doc.id)
+    const attachedByProfile = attachment?.attached_by
+      ? membersList.find((m) => m.id === attachment.attached_by)
+      : null
+    const attachedBy = attachedByProfile?.display_name || attachedByProfile?.email || 'Unknown'
+    return {
+      ...doc,
+      attached_by: attachedBy,
+      attached_at: attachment?.created_at || null,
+    }
+  })
 
   // Get assignee name
   const assigneeName = task.assigned_to
@@ -136,7 +151,7 @@ export default async function TaskPage({
             taskAssignedTo={task.assigned_to}
             taskAssigneeName={assigneeName}
             comments={commentTree}
-            attachments={(attachedDocuments ?? []) as { id: string; title: string; file_name: string | null }[]}
+            attachments={attachmentsWithMeta as { id: string; title: string; file_name: string | null; attached_by?: string; attached_at?: string | null }[]}
             availableDocuments={(allDocuments ?? []) as { id: string; title: string; file_name: string | null }[]}
             members={membersList}
             canEdit={canEdit}
