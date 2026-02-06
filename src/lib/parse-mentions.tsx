@@ -83,7 +83,12 @@ export function getMentionSuggestions(
   if (afterAt.includes(' ') || afterAt.includes('\n')) return []
   
   const query = afterAt.toLowerCase()
-  if (query.length === 0) return members.slice(0, 10) // Show first 10 if no query
+  if (query.length === 0) {
+    return members.slice(0, 10).map((m) => ({
+      ...m,
+      matchText: m.display_name || m.email.split('@')[0],
+    }))
+  }
   
   // Match by email, display name, or username part
   return members
