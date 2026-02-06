@@ -172,7 +172,7 @@ export function CommentWithReactions({
 
             {/* Reactions */}
             {Object.keys(reactionsByEmoji).length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="mt-2 flex flex-wrap gap-2">
                 {Object.entries(reactionsByEmoji).map(([emoji, emojiReactions]) => {
                   const userReacted = emojiReactions.some((r) => r.user_id === currentUserId)
                   return (
@@ -181,13 +181,13 @@ export function CommentWithReactions({
                       type="button"
                       onClick={() => handleReaction(emoji)}
                       disabled={!canEdit}
-                      className={`group flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${
+                      className={`group flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors ${
                         userReacted
                           ? 'border-blue-300 bg-blue-50 dark:border-blue-700 dark:bg-blue-950/30'
                           : 'border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800'
                       } ${!canEdit ? 'cursor-default' : ''}`}
                     >
-                      <span>{emoji}</span>
+                      <span className="text-base leading-none">{emoji}</span>
                       <span className="text-zinc-600 dark:text-zinc-400">{emojiReactions.length}</span>
                     </button>
                   )
