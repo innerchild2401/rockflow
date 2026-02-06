@@ -221,6 +221,27 @@ CREATE INDEX idx_audit_logs_company_time ON app.audit_logs(company_id, created_a
 CREATE INDEX idx_audit_logs_entity ON app.audit_logs(entity_type, entity_id);
 CREATE INDEX idx_audit_logs_user ON app.audit_logs(user_id, created_at DESC);
 
+-- Company feed (team-wide posts: what you're working on, ask for help)
+CREATE TABLE app.company_feed (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  company_id UUID NOT NULL REFERENCES app.companies(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES app.profiles(id) ON DELETE RESTRICT,
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_company_feed_company ON app.company_feed(company_id);
+CREATE INDEX idx_company_feed_created ON app.company_feed(company_id, created_at DESC);
+
+-- Recap cache (one row per company per hour; content = AI-generated past-hour report)
+CREATE TABLE app.company_recaps (
+  company_id UUID NOT NULL REFERENCES app.companies(id) ON DELETE CASCADE,
+  period_start TIMESTAMPTZ NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (company_id, period_start)
+);
+CREATE INDEX idx_company_recaps_period ON app.company_recaps(company_id, period_start DESC);
+
 -- =============================================================================
 -- RLS HELPERS (used by policies)
 -- =============================================================================
@@ -433,6 +454,22 @@ ALTER TABLE app.document_chunks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE app.tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE app.task_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE app.audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app.company_feed ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app.company_recaps ENABLE ROW LEVEL SECURITY;
+
+-- Company feed: members can read and post
+CREATE POLICY company_feed_select ON app.company_feed
+  FOR SELECT USING (app.is_company_member(company_id));
+CREATE POLICY company_feed_insert ON app.company_feed
+  FOR INSERT WITH CHECK (app.is_company_member(company_id));
+
+-- Company recaps: members can read; insert/update for cache
+CREATE POLICY company_recaps_select ON app.company_recaps
+  FOR SELECT USING (app.is_company_member(company_id));
+CREATE POLICY company_recaps_insert ON app.company_recaps
+  FOR INSERT WITH CHECK (app.is_company_member(company_id));
+CREATE POLICY company_recaps_update ON app.company_recaps
+  FOR UPDATE USING (app.is_company_member(company_id));
 
 -- Profiles: users can read/update own
 CREATE POLICY profiles_select_own ON app.profiles

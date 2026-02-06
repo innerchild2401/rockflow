@@ -1,0 +1,133 @@
+'use client'
+
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { getCompanyFeedAction, postCompanyFeedAction, type FeedPost } from '@/app/actions/company-feed'
+
+export default function CompanyFeed({ companyId }: { companyId: string }) {
+  const router = useRouter()
+  const [posts, setPosts] = useState<FeedPost[]>([])
+  const [loading, setLoading] = useState(true)
+  const [postError, setPostError] = useState<string | null>(null)
+  const [body, setBody] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const listRef = useRef<HTMLDivElement>(null)
+
+  async function loadFeed() {
+    setLoading(true)
+    const r = await getCompanyFeedAction(companyId)
+    setLoading(false)
+    if (r.error) return
+    setPosts(r.posts)
+  }
+
+  useEffect(() => {
+    loadFeed()
+  }, [companyId])
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const trimmed = body.trim()
+    if (!trimmed || submitting) return
+    setSubmitting(true)
+    setPostError(null)
+    const r = await postCompanyFeedAction(companyId, trimmed)
+    setSubmitting(false)
+    if (r.error) {
+      setPostError(r.error)
+      return
+    }
+    setBody('')
+    await loadFeed()
+    router.refresh()
+  }
+
+  return (
+    <Card padding="none" className="flex flex-col overflow-hidden">
+      <div className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-700">
+        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Team feed</h2>
+        <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+          Share what you&apos;re working on, ask for help, or post updates.
+        </p>
+      </div>
+      <div ref={listRef} className="min-h-[200px] flex-1 overflow-y-auto px-6 py-4">
+        {loading && (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex gap-3">
+                <div className="h-8 w-8 shrink-0 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-700" />
+                <div className="flex-1 space-y-1">
+                  <div className="h-3 w-24 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
+                  <div className="h-4 w-full animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {!loading && posts.length === 0 && (
+          <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
+            No posts yet. Be the first to share!
+          </p>
+        )}
+        {!loading && posts.length > 0 && (
+          <ul className="space-y-4">
+            {posts.map((post) => (
+              <li key={post.id} className="flex gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+                  {post.author_name.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                      {post.author_name}
+                    </span>
+                    <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                      {new Date(post.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">
+                    {post.body}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <form
+        onSubmit={handleSubmit}
+        className="border-t border-zinc-200 px-6 py-3 dark:border-zinc-700"
+      >
+        {postError && (
+          <p className="mb-2 text-sm text-red-600 dark:text-red-400">{postError}</p>
+        )}
+        <div className="flex gap-2">
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit(e as unknown as React.FormEvent)
+            }}
+            placeholder="Share an update, ask for help…"
+            rows={2}
+            className="min-w-0 flex-1 resize-none rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50"
+          />
+          <Button
+            type="submit"
+            size="sm"
+            disabled={submitting || !body.trim()}
+            isLoading={submitting}
+            className="shrink-0"
+          >
+            Post
+          </Button>
+        </div>
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          Ctrl+Enter to send
+        </p>
+      </form>
+    </Card>
+  )
+}
