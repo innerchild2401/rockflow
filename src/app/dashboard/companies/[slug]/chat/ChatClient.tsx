@@ -41,8 +41,9 @@ export default function ChatClient({
       setMessages((prev) => prev.slice(0, -1))
       return
     }
-    if (r.reply) {
-      setMessages((prev) => [...prev, { role: 'assistant', content: r.reply, citations: r.citations ?? [] }])
+    if (r.reply != null) {
+      const reply: string = r.reply
+      setMessages((prev) => [...prev, { role: 'assistant', content: reply, citations: r.citations ?? [] }])
     }
   }
 
