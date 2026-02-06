@@ -44,7 +44,7 @@ export function CommentWithReactions({
   taskId: string
   currentUserId: string | null
   canEdit: boolean
-  onReply: (commentId: string) => void
+  onReply: (commentId: string | null) => void
   replyTo: string | null
   replyBody: string
   setReplyBody: (body: string) => void
