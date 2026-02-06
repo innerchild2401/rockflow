@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 
 const APP_SCHEMA = 'app'
 
@@ -11,7 +12,7 @@ const APP_SCHEMA = 'app'
  */
 export function useTaskRealtime(taskId: string, enabled = true) {
   const router = useRouter()
-  const channelRef = useRef<ReturnType<typeof createClient>['channel'] | null>(null)
+  const channelRef = useRef<RealtimeChannel | null>(null)
 
   useEffect(() => {
     if (!enabled) return
