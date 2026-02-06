@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Rockflow — Knowledge & Operations",
+  title: "RockFlow — Knowledge & Operations",
   description: "Multi-tenant enterprise knowledge and operations platform",
 };
 

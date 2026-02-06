@@ -6,7 +6,7 @@ export default function Home() {
       <main className="w-full max-w-md space-y-10 text-center">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Rockflow
+            RockFlow
           </h1>
           <p className="mt-2 text-zinc-600 dark:text-zinc-400">
             Multi-tenant knowledge and operations platform

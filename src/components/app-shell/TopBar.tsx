@@ -72,7 +72,7 @@ export function TopBar({
           </svg>
         </button>
         <Link href="/dashboard" className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 shrink-0">
-          Rockflow
+          RockFlow
         </Link>
         <div className="hidden lg:block">
           <Breadcrumbs slug={slug} segment={segment} />
