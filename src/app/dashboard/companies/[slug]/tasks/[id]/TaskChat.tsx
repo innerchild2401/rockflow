@@ -70,6 +70,7 @@ export default function TaskChat({
   attachments,
   members,
   availableDocuments,
+  currentUserId,
   canEdit,
 }: {
   companyId: string
