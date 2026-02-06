@@ -1,10 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import { canReadTasks, canCreateTasks } from '@/lib/permissions'
+import { canReadTasks, canCreateTasks, canEditTasks } from '@/lib/permissions'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import TasksToolbar from './TasksToolbar'
-import TasksList from './TasksList'
+import TasksViewSwitcher from './TasksViewSwitcher'
 
 const APP_SCHEMA = 'app'
 
@@ -21,6 +21,7 @@ export default async function TasksPage({ params }: { params: Promise<{ slug: st
   if (!canRead) notFound()
 
   const canCreate = await canCreateTasks(company.id)
+  const canEdit = await canEditTasks(company.id)
 
   const { data: tasks } = await supabase
     .schema(APP_SCHEMA)
@@ -49,7 +50,7 @@ export default async function TasksPage({ params }: { params: Promise<{ slug: st
   const membersList = (profiles ?? []) as { id: string; display_name: string | null; email: string }[]
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       <PageHeader
         backHref={`/dashboard/companies/${slug}`}
         backLabel={company.name}
@@ -61,7 +62,14 @@ export default async function TasksPage({ params }: { params: Promise<{ slug: st
         <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
           <TasksToolbar companyId={company.id} slug={slug} members={membersList} canCreate={canCreate} />
         </div>
-        <TasksList slug={slug} tasks={tasksList} memberNames={memberNames} />
+        <TasksViewSwitcher
+          companyId={company.id}
+          slug={slug}
+          tasks={tasksList}
+          memberNames={memberNames}
+          members={membersList}
+          canEdit={canEdit}
+        />
       </Card>
     </div>
   )

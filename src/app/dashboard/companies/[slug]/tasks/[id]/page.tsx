@@ -153,6 +153,7 @@ export default async function TaskPage({
             comments={commentTree}
             attachments={attachmentsWithMeta as { id: string; title: string; file_name: string | null; attached_by?: string; attached_at?: string | null }[]}
             availableDocuments={(allDocuments ?? []) as { id: string; title: string; file_name: string | null }[]}
+            currentUserId={currentUserId}
             members={membersList}
             canEdit={canEdit}
           />

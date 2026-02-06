@@ -3,14 +3,15 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createTaskCommentAction, updateTaskCommentAction, deleteTaskCommentAction } from '@/app/actions/tasks'
+import { createTaskCommentAction } from '@/app/actions/tasks'
 import { attachDocumentToTaskAction, detachDocumentFromTaskAction } from '@/app/actions/task-collaboration'
-import { highlightMentions, getMentionSuggestions } from '@/lib/parse-mentions'
+import { getMentionSuggestions } from '@/lib/parse-mentions'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { useToast } from '@/lib/toast'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useTaskRealtime } from './useTaskRealtime'
+import { CommentWithReactions } from './CommentWithReactions'
 import AttachDocumentMenu from './AttachDocumentMenu'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -83,6 +84,7 @@ export default function TaskChat({
   attachments: Document[]
   members: { id: string; email: string; display_name: string | null }[]
   availableDocuments: Document[]
+  currentUserId: string | null
   canEdit: boolean
 }) {
   const router = useRouter()
@@ -90,8 +92,6 @@ export default function TaskChat({
   const [message, setMessage] = useState('')
   const [replyTo, setReplyTo] = useState<string | null>(null)
   const [replyBody, setReplyBody] = useState('')
-  const [editId, setEditId] = useState<string | null>(null)
-  const [editBody, setEditBody] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mentionQuery, setMentionQuery] = useState<{ query: string; position: number } | null>(null)
@@ -258,117 +258,6 @@ export default function TaskChat({
     }
   }
 
-  function CommentBlock({ c, depth }: { c: CommentNode; depth: number }) {
-    const isEditing = editId === c.id
-    return (
-      <div className={`${depth > 0 ? 'ml-4 sm:ml-6 mt-2 border-l-2 border-zinc-200 pl-3 sm:pl-4 dark:border-zinc-700' : ''}`}>
-        <div className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">{c.author}</span>
-            <span className="text-xs text-zinc-400 dark:text-zinc-500">
-              {new Date(c.created_at).toLocaleString()}
-            </span>
-          </div>
-          {isEditing ? (
-              <div className="mt-2">
-              <textarea
-                value={editBody}
-                onChange={(e) => setEditBody(e.target.value)}
-                rows={2}
-                className="w-full rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50"
-              />
-              <div className="mt-1 flex gap-2">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (!editBody.trim()) return
-                    setLoading(true)
-                    const r = await updateTaskCommentAction(companyId, c.id, editBody.trim())
-                    setLoading(false)
-                    if (!r?.error) {
-                      setEditId(null)
-                      setEditBody('')
-                      router.refresh()
-                    }
-                  }}
-                  disabled={loading}
-                  className="text-sm text-zinc-700 hover:underline dark:text-zinc-300 disabled:opacity-50"
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setEditId(null); setEditBody('') }}
-                  className="text-sm text-zinc-500 hover:underline dark:text-zinc-400"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <p className="mt-1 whitespace-pre-wrap text-sm text-zinc-800 dark:text-zinc-200">
-              {highlightMentions(c.body)}
-            </p>
-          )}
-          {canEdit && !isEditing && (
-            <div className="mt-2 flex flex-wrap gap-3 text-xs">
-              <button
-                type="button"
-                onClick={() => { setEditId(c.id); setEditBody(c.body) }}
-                className="text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-400"
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!confirm('Delete this comment?')) return
-                  const r = await deleteTaskCommentAction(companyId, c.id)
-                  if (!r?.error) router.refresh()
-                }}
-                className="text-red-600 hover:text-red-800 dark:text-red-400"
-              >
-                Delete
-              </button>
-              {depth === 0 && (
-                <button
-                  type="button"
-                  onClick={() => setReplyTo(c.id)}
-                  className="text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-400"
-                >
-                  Reply
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-        {replyTo === c.id && (
-          <form onSubmit={(e) => onSubmitReply(c.id, e)} className="mt-2 ml-4">
-            <textarea
-              value={replyBody}
-              onChange={(e) => setReplyBody(e.target.value)}
-              placeholder="Write a reply…"
-              rows={2}
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50"
-            />
-            <div className="mt-1 flex gap-2">
-              <Button type="submit" size="sm" disabled={loading || !replyBody.trim()} isLoading={loading}>
-                Reply
-              </Button>
-              <button
-                type="button"
-                onClick={() => { setReplyTo(null); setReplyBody('') }}
-                className="text-sm text-zinc-500 hover:underline dark:text-zinc-400"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        )}
-        {c.replies?.map((r) => <CommentBlock key={r.id} c={r} depth={depth + 1} />)}
-      </div>
-    )
-  }
 
   return (
     <div className="flex h-[calc(100vh-14rem)] flex-col rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 sm:h-[calc(100vh-12rem)] lg:h-[calc(100vh-10rem)]">
@@ -496,7 +385,23 @@ export default function TaskChat({
                 </div>
               )
             } else {
-              return <CommentBlock key={activity.data.id} c={activity.data} depth={0} />
+              return (
+                <CommentWithReactions
+                  key={activity.data.id}
+                  comment={activity.data}
+                  depth={0}
+                  companyId={companyId}
+                  taskId={taskId}
+                  currentUserId={currentUserId}
+                  canEdit={canEdit}
+                  onReply={setReplyTo}
+                  replyTo={replyTo}
+                  replyBody={replyBody}
+                  setReplyBody={setReplyBody}
+                  onSubmitReply={onSubmitReply}
+                  loading={loading}
+                />
+              )
             }
           })}
           {activities.length === 0 && (
