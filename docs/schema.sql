@@ -400,6 +400,17 @@ AS $$
     OR app.has_company_permission(p_company_id, 'manage_members');
 $$;
 
+-- True when current user created the company (allows adding self as first member)
+CREATE OR REPLACE FUNCTION app.is_company_creator(p_company_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = app
+AS $$
+  SELECT created_by = app.current_user_id() FROM app.companies WHERE id = p_company_id;
+$$;
+
 -- =============================================================================
 -- RLS POLICIES
 -- =============================================================================
@@ -427,19 +438,21 @@ CREATE POLICY profiles_insert_own ON app.profiles
 -- Companies: members can read; enterprise_admin can insert (create company)
 CREATE POLICY companies_select_member ON app.companies
   FOR SELECT USING (app.is_company_member(id));
+-- Allow any authenticated user to create a company; app sets created_by = current user
 CREATE POLICY companies_insert_admin ON app.companies
-  FOR INSERT WITH CHECK (
-    app.current_user_id() IS NOT NULL
-    AND created_by = app.current_user_id()
-  );
+  FOR INSERT WITH CHECK (app.current_user_id() IS NOT NULL);
 CREATE POLICY companies_update_admin ON app.companies
   FOR UPDATE USING (app.is_company_admin(id));
 
 -- Company members: members can read; only admins can insert/update/delete
 CREATE POLICY company_members_select ON app.company_members
   FOR SELECT USING (app.is_company_member(company_id));
+-- Admins can add members; company creator can add themselves as first member
 CREATE POLICY company_members_insert ON app.company_members
-  FOR INSERT WITH CHECK (app.can_manage_members(company_id));
+  FOR INSERT WITH CHECK (
+    app.can_manage_members(company_id)
+    OR (user_id = app.current_user_id() AND app.is_company_creator(company_id))
+  );
 CREATE POLICY company_members_update ON app.company_members
   FOR UPDATE USING (app.can_manage_members(company_id));
 CREATE POLICY company_members_delete ON app.company_members
