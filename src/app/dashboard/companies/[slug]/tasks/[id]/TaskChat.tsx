@@ -90,7 +90,7 @@ export default function TaskChat({
     | { type: 'comment'; data: CommentNode }
     | { type: 'attachment'; data: Document }
   
-  const activities: ActivityItem[] = [
+  const allActivities: ActivityItem[] = [
     ...attachments.map((a) => ({ type: 'attachment' as const, data: a })),
     ...comments.map((c) => ({ type: 'comment' as const, data: c })),
   ].sort((a, b) => {
@@ -98,6 +98,35 @@ export default function TaskChat({
     const bDate = b.type === 'attachment' ? (b.data.attached_at || '') : b.data.created_at
     return new Date(aDate).getTime() - new Date(bDate).getTime()
   })
+  
+  // Filter activities
+  let filteredActivities = allActivities
+  if (activityFilter === 'comments') {
+    filteredActivities = filteredActivities.filter((a) => a.type === 'comment')
+  } else if (activityFilter === 'attachments') {
+    filteredActivities = filteredActivities.filter((a) => a.type === 'attachment')
+  }
+  
+  // Search filter
+  if (activitySearch.trim()) {
+    const searchLower = activitySearch.toLowerCase()
+    filteredActivities = filteredActivities.filter((a) => {
+      if (a.type === 'attachment') {
+        return (
+          a.data.title?.toLowerCase().includes(searchLower) ||
+          a.data.file_name?.toLowerCase().includes(searchLower) ||
+          a.data.attached_by?.toLowerCase().includes(searchLower)
+        )
+      } else {
+        return (
+          a.data.body.toLowerCase().includes(searchLower) ||
+          a.data.author.toLowerCase().includes(searchLower)
+        )
+      }
+    })
+  }
+  
+  const activities = filteredActivities
   const router = useRouter()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [message, setMessage] = useState('')
@@ -109,6 +138,8 @@ export default function TaskChat({
   const [error, setError] = useState<string | null>(null)
   const [mentionQuery, setMentionQuery] = useState<{ query: string; position: number } | null>(null)
   const [showAttachMenu, setShowAttachMenu] = useState(false)
+  const [activityFilter, setActivityFilter] = useState<'all' | 'comments' | 'attachments'>('all')
+  const [activitySearch, setActivitySearch] = useState('')
   const attachButtonRef = useRef<HTMLButtonElement>(null)
   const { toasts, addToast, removeToast } = useToast()
   
@@ -396,13 +427,42 @@ export default function TaskChat({
       )}
 
       {/* Messages/Activity Feed */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-        {error && (
-          <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/50 dark:text-red-200">
-            {error}
+      <div className="flex min-h-0 flex-1 flex-col">
+        {/* Activity Feed Controls */}
+        <div className="border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex gap-1 overflow-x-auto">
+              {(['all', 'comments', 'attachments'] as const).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setActivityFilter(f)}
+                  className={`whitespace-nowrap rounded px-2.5 py-1 text-xs font-medium transition-colors ${
+                    activityFilter === f
+                      ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
+                      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+                  }`}
+                >
+                  {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
+                </button>
+              ))}
+            </div>
+            <input
+              type="text"
+              value={activitySearch}
+              onChange={(e) => setActivitySearch(e.target.value)}
+              placeholder="Search activity…"
+              className="w-full rounded border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50 sm:w-48"
+            />
           </div>
-        )}
-        <div className="space-y-4">
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          {error && (
+            <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/50 dark:text-red-200">
+              {error}
+            </div>
+          )}
+          <div className="space-y-4">
           {activities.map((activity, idx) => {
             if (activity.type === 'attachment') {
               const doc = activity.data
@@ -439,8 +499,13 @@ export default function TaskChat({
             }
           })}
           {activities.length === 0 && (
-            <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">No comments yet. Start the conversation!</p>
+            <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
+              {activitySearch || activityFilter !== 'all'
+                ? 'No matching activity found.'
+                : 'No comments yet. Start the conversation!'}
+            </p>
           )}
+          </div>
         </div>
       </div>
 
@@ -463,18 +528,30 @@ export default function TaskChat({
                 className="w-full resize-none rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50"
               />
               {mentionSuggestions.length > 0 && mentionQuery && (
-                <div className="absolute bottom-full left-0 mb-1 max-h-48 w-full overflow-y-auto rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
-                  {mentionSuggestions.map((m) => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => insertMention(m)}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                    >
-                      <div className="font-medium">{m.matchText}</div>
-                      <div className="text-xs text-zinc-500">{m.email}</div>
-                    </button>
-                  ))}
+                <div className="absolute bottom-full left-0 z-50 mb-1 w-full max-w-md rounded-lg border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900 sm:max-w-lg">
+                  <div className="border-b border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+                    Mention someone
+                  </div>
+                  <div className="max-h-48 overflow-y-auto">
+                    {mentionSuggestions.map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => insertMention(m)}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs font-medium text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                            {(m.display_name || m.email).charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{m.matchText}</div>
+                            <div className="text-xs text-zinc-500 truncate">{m.email}</div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
