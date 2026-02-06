@@ -392,7 +392,7 @@ export default function TaskChat({
 
       {/* Input Area */}
       {canEdit && (
-        <div className="border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
+        <div className="relative border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
           <form onSubmit={onSubmitMessage} className="relative">
             <div className="relative">
               <textarea
@@ -426,7 +426,7 @@ export default function TaskChat({
             </div>
             <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
-                <div className="relative">
+                <div className="relative z-50">
                   <button
                     ref={attachButtonRef}
                     type="button"

@@ -50,7 +50,7 @@ export default function AttachDocumentMenu({
   return (
     <div
       ref={menuRef}
-      className="absolute bottom-full left-0 mb-2 w-full max-w-md rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
+      className="absolute bottom-full left-0 z-50 mb-2 min-w-[280px] max-w-[90vw] rounded-lg border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900 sm:w-[400px] sm:max-w-[400px]"
     >
       <div className="border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
         <input
@@ -62,7 +62,7 @@ export default function AttachDocumentMenu({
           className="w-full rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50"
         />
       </div>
-      <div className="max-h-64 overflow-y-auto">
+      <div className="max-h-64 min-h-[120px] overflow-y-auto">
         {filtered.length === 0 ? (
           <div className="px-4 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
             {search ? 'No documents found' : 'No documents available'}
