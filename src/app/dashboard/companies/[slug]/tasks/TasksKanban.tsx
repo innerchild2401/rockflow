@@ -72,10 +72,6 @@ export default function TasksKanban({
     setTargetStatus(null)
     router.refresh()
   }
-    setDraggedTask(null)
-    setTargetStatus(null)
-    router.refresh()
-  }
 
   function handleDragStart(taskId: string) {
     if (!canEdit) return
