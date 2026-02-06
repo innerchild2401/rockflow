@@ -2,8 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { canReadTasks, canCreateTasks } from '@/lib/permissions'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { Card, CardHeader, CardContent } from '@/components/ui/Card'
-import CreateTaskForm from './CreateTaskForm'
+import { Card } from '@/components/ui/Card'
+import TasksToolbar from './TasksToolbar'
 import TasksList from './TasksList'
 
 const APP_SCHEMA = 'app'
@@ -49,26 +49,17 @@ export default async function TasksPage({ params }: { params: Promise<{ slug: st
   const membersList = (profiles ?? []) as { id: string; display_name: string | null; email: string }[]
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
         backHref={`/dashboard/companies/${slug}`}
         backLabel={company.name}
         title="Tasks"
-        description="Manage tasks and comments."
+        description="Manage tasks and track progress."
       />
 
-      {canCreate && (
-        <Card>
-          <CardHeader title="New task" />
-          <CardContent>
-            <CreateTaskForm companyId={company.id} slug={slug} members={membersList} />
-          </CardContent>
-        </Card>
-      )}
-
       <Card padding="none">
-        <div className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-700">
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">All tasks</h2>
+        <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
+          <TasksToolbar companyId={company.id} slug={slug} members={membersList} canCreate={canCreate} />
         </div>
         <TasksList slug={slug} tasks={tasksList} memberNames={memberNames} />
       </Card>

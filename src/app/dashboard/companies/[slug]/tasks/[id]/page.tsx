@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { canReadTasks, canEditTasks, canDeleteTasks } from '@/lib/permissions'
 import { PageHeader } from '@/components/ui/PageHeader'
 import TaskDetail from './TaskDetail'
-import TaskComments from './TaskComments'
+import TaskChat from './TaskChat'
 
 const APP_SCHEMA = 'app'
 
@@ -81,25 +81,68 @@ export default async function TaskPage({
     : { data: [] }
   const membersList = (memberProfiles ?? []) as { id: string; display_name: string | null; email: string }[]
 
+  // Get task attachments
+  const { data: attachments } = await supabase
+    .schema(APP_SCHEMA)
+    .from('task_attachments')
+    .select('document_id')
+    .eq('task_id', id)
+  
+  const documentIds = attachments?.map((a) => a.document_id) ?? []
+  const { data: attachedDocuments } = documentIds.length
+    ? await supabase.schema(APP_SCHEMA).from('documents').select('id, title, file_name').in('id', documentIds)
+    : { data: [] }
+
+  // Get assignee name
+  const assigneeName = task.assigned_to
+    ? membersList.find((m) => m.id === task.assigned_to)?.display_name || membersList.find((m) => m.id === task.assigned_to)?.email || null
+    : null
+
+  // Get all documents for attachment menu
+  const { data: allDocuments } = await supabase
+    .schema(APP_SCHEMA)
+    .from('documents')
+    .select('id, title, file_name')
+    .eq('company_id', company.id)
+    .order('updated_at', { ascending: false })
+    .limit(100)
+
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-7xl space-y-4 px-4 sm:space-y-6 sm:px-6">
       <PageHeader backHref={`/dashboard/companies/${slug}/tasks`} backLabel="Tasks" title="Task" />
-      <TaskDetail
-        companyId={company.id}
-        taskId={task.id}
-        slug={slug}
-        initial={{ title: task.title, description: task.description ?? '', status: task.status, due_date: task.due_date ?? '', assigned_to: task.assigned_to ?? '' }}
-        members={membersList}
-        canEdit={canEdit}
-        canDelete={canDelete}
-      />
-      <TaskComments
-        companyId={company.id}
-        taskId={task.id}
-        slug={slug}
-        comments={commentTree}
-        canEdit={canEdit}
-      />
+      <div className="grid gap-4 lg:grid-cols-3">
+        {/* Sidebar - Task Info & Quick Actions */}
+        <div className="lg:col-span-1">
+          <TaskDetail
+            companyId={company.id}
+            taskId={task.id}
+            slug={slug}
+            initial={{ title: task.title, description: task.description ?? '', status: task.status, due_date: task.due_date ?? '', assigned_to: task.assigned_to ?? '' }}
+            members={membersList}
+            canEdit={canEdit}
+            canDelete={canDelete}
+            availableDocuments={allDocuments ?? []}
+          />
+        </div>
+        {/* Main - Chat Interface */}
+        <div className="lg:col-span-2">
+          <TaskChat
+            companyId={company.id}
+            taskId={task.id}
+            slug={slug}
+            taskTitle={task.title}
+            taskStatus={task.status}
+            taskDueDate={task.due_date}
+            taskAssignedTo={task.assigned_to}
+            taskAssigneeName={assigneeName}
+            comments={commentTree}
+            attachments={(attachedDocuments ?? []) as { id: string; title: string; file_name: string | null }[]}
+            availableDocuments={(allDocuments ?? []) as { id: string; title: string; file_name: string | null }[]}
+            members={membersList}
+            canEdit={canEdit}
+          />
+        </div>
+      </div>
     </div>
   )
 }

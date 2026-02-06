@@ -7,6 +7,7 @@ import {
   canDeleteTasks,
 } from '@/lib/permissions'
 import type { TaskStatus } from '@/types/database'
+import { processMentionsAction, createNotificationForWatchers } from './task-collaboration'
 
 const APP_SCHEMA = 'app'
 
@@ -94,6 +95,11 @@ export async function createTaskCommentAction(
     .select('id')
     .single()
   if (error) return { error: error.message, id: null }
+  
+  // Process @mentions and create notifications
+  await processMentionsAction(companyId, taskId, data.id, body, profile?.id ?? user.id)
+  await createNotificationForWatchers(companyId, taskId, 'commented', profile?.id ?? user.id, data.id)
+  
   return { error: null, id: data.id }
 }
 

@@ -14,16 +14,20 @@ const variantStyles: Record<BadgeVariant, string> = {
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeVariant
+  size?: 'sm' | 'md'
 }
 
 const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
-  ({ className = '', variant = 'default', ...props }, ref) => (
-    <span
-      ref={ref}
-      className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${variantStyles[variant]} ${className}`}
-      {...props}
-    />
-  )
+  ({ className = '', variant = 'default', size = 'md', ...props }, ref) => {
+    const sizeStyles = size === 'sm' ? 'px-1.5 py-0.5 text-xs' : 'px-2 py-0.5 text-xs'
+    return (
+      <span
+        ref={ref}
+        className={`inline-flex items-center rounded-md font-medium ${sizeStyles} ${variantStyles[variant]} ${className}`}
+        {...props}
+      />
+    )
+  }
 )
 
 Badge.displayName = 'Badge'
