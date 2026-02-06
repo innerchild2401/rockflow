@@ -14,7 +14,10 @@ export default async function TaskPage({
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-
+  
+  const { data: profile } = await supabase.schema(APP_SCHEMA).from('profiles').select('id').eq('id', user.id).single()
+  const currentUserId = profile?.id ?? user.id
+  
   const { data: company } = await supabase.schema(APP_SCHEMA).from('companies').select('id, name, slug').eq('slug', slug).single()
   if (!company) notFound()
 
