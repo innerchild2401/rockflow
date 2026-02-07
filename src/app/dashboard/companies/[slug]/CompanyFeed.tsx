@@ -27,6 +27,12 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
     loadFeed()
   }, [companyId])
 
+  useEffect(() => {
+    if (!loading && posts.length > 0 && listRef.current) {
+      listRef.current.scrollTop = listRef.current.scrollHeight
+    }
+  }, [loading, posts.length])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const trimmed = body.trim()

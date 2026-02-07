@@ -13,7 +13,7 @@ export type FeedPost = {
   author_name: string
 }
 
-/** List company feed posts (newest first). */
+/** List company feed posts (oldest first so newest is at bottom). */
 export async function getCompanyFeedAction(companyId: string, limit = 50): Promise<{ error: string | null; posts: FeedPost[] }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -33,7 +33,7 @@ export async function getCompanyFeedAction(companyId: string, limit = 50): Promi
     .from('company_feed')
     .select('id, company_id, user_id, body, created_at')
     .eq('company_id', companyId)
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: true })
     .limit(limit)
 
   if (error) return { error: error.message, posts: [] }

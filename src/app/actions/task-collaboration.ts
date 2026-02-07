@@ -114,7 +114,7 @@ export async function processMentionsAction(
   return { error: null, mentioned }
 }
 
-/** Create notifications for all task watchers. */
+/** Create notifications for task watchers or for a mentioned user. */
 export async function createNotificationForWatchers(
   companyId: string,
   taskId: string,
@@ -125,22 +125,31 @@ export async function createNotificationForWatchers(
   targetUserId: string | null = null
 ): Promise<void> {
   const supabase = await createClient()
+
+  // For mentions, notify only the mentioned user (no watchers needed)
+  if (type === 'mentioned' && targetUserId) {
+    const notifications = [{
+      user_id: targetUserId,
+      task_id: taskId,
+      type,
+      comment_id: commentId,
+      document_id: documentId,
+      actor_id: actorId,
+    }]
+    await supabase.schema(APP_SCHEMA).from('task_notifications').insert(notifications)
+    return
+  }
+
   const { data: watchers } = await supabase
     .schema(APP_SCHEMA)
     .from('task_watchers')
     .select('user_id')
     .eq('task_id', taskId)
-  
   if (!watchers?.length) return
-  
-  // For mentions, only notify the mentioned user
-  // For other types, notify all watchers except the actor
-  const notifyUserIds = type === 'mentioned' && targetUserId
-    ? [targetUserId]
-    : watchers.filter((w) => w.user_id !== actorId).map((w) => w.user_id)
-  
+
+  const notifyUserIds = watchers.filter((w) => w.user_id !== actorId).map((w) => w.user_id)
   if (notifyUserIds.length === 0) return
-  
+
   const notifications = notifyUserIds.map((userId) => ({
     user_id: userId,
     task_id: taskId,
@@ -149,7 +158,6 @@ export async function createNotificationForWatchers(
     document_id: documentId,
     actor_id: actorId,
   }))
-  
   await supabase.schema(APP_SCHEMA).from('task_notifications').insert(notifications)
 }
 
