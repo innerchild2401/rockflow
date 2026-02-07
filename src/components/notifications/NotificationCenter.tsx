@@ -36,6 +36,7 @@ export function NotificationCenter({ companyId, companySlug }: { companyId: stri
   const [companyNotifications, setCompanyNotifications] = useState<CompanyNotification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [filter, setFilter] = useState<TaskNotification['type'] | 'member_joined' | 'all'>('all')
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -91,12 +92,15 @@ export function NotificationCenter({ companyId, companySlug }: { companyId: stri
 
   async function loadNotifications() {
     setLoading(true)
+    setLoadError(null)
     const [taskResult, companyResult] = await Promise.all([
       getNotificationsAction(companyId, 50),
       getCompanyNotificationsAction(companyId, 20),
     ])
     if (!taskResult.error) setTaskNotifications(taskResult.notifications as TaskNotification[])
+    else if (taskResult.error) setLoadError(taskResult.error)
     if (!companyResult.error) setCompanyNotifications(companyResult.notifications)
+    else if (companyResult.error) setLoadError(companyResult.error)
     setLoading(false)
   }
 
@@ -195,6 +199,11 @@ export function NotificationCenter({ companyId, companySlug }: { companyId: stri
           <div className="max-h-[480px] overflow-y-auto">
             {loading ? (
               <div className="px-4 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">Loading...</div>
+            ) : loadError ? (
+              <div className="px-4 py-8 text-center text-sm text-amber-600 dark:text-amber-400">
+                Couldn&apos;t load notifications.{' '}
+                {process.env.NODE_ENV === 'development' && <span className="block mt-1 text-xs">{loadError}</span>}
+              </div>
             ) : filtered.length === 0 ? (
               <div className="px-4 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">No notifications</div>
             ) : (

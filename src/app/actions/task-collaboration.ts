@@ -158,7 +158,10 @@ export async function getUnreadNotificationCountAction(companyId: string): Promi
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return 0
-  
+
+  const { data: profile } = await supabase.schema(APP_SCHEMA).from('profiles').select('id').eq('id', user.id).single()
+  const userId = profile?.id ?? user.id
+
   const { data: tasks } = await supabase
     .schema(APP_SCHEMA)
     .from('tasks')
@@ -166,15 +169,15 @@ export async function getUnreadNotificationCountAction(companyId: string): Promi
     .eq('company_id', companyId)
   const taskIds = tasks?.map((t) => t.id) ?? []
   if (taskIds.length === 0) return 0
-  
+
   const { count: unreadCount, error } = await supabase
     .schema(APP_SCHEMA)
     .from('task_notifications')
     .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .is('read_at', null)
     .in('task_id', taskIds)
-  
+
   if (error) return 0
   return unreadCount ?? 0
 }
@@ -184,14 +187,17 @@ export async function markNotificationsReadAction(notificationIds: string[]) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated.' }
-  
+
+  const { data: profile } = await supabase.schema(APP_SCHEMA).from('profiles').select('id').eq('id', user.id).single()
+  const userId = profile?.id ?? user.id
+
   const { error } = await supabase
     .schema(APP_SCHEMA)
     .from('task_notifications')
     .update({ read_at: new Date().toISOString() })
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .in('id', notificationIds)
-  
+
   return error ? { error: error.message } : { error: null }
 }
 
@@ -200,7 +206,10 @@ export async function getNotificationsAction(companyId: string, limit = 50) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated.', notifications: [] }
-  
+
+  const { data: profile } = await supabase.schema(APP_SCHEMA).from('profiles').select('id').eq('id', user.id).single()
+  const userId = profile?.id ?? user.id
+
   const { data: tasks } = await supabase
     .schema(APP_SCHEMA)
     .from('tasks')
@@ -208,17 +217,20 @@ export async function getNotificationsAction(companyId: string, limit = 50) {
     .eq('company_id', companyId)
   const taskIds = tasks?.map((t) => t.id) ?? []
   if (taskIds.length === 0) return { error: null, notifications: [] }
-  
+
   const { data: notifications, error } = await supabase
     .schema(APP_SCHEMA)
     .from('task_notifications')
     .select('id, task_id, type, comment_id, document_id, actor_id, read_at, created_at')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .in('task_id', taskIds)
     .order('created_at', { ascending: false })
     .limit(limit)
-  
-  if (error) return { error: null, notifications: [] }
+
+  if (error) {
+    const msg = process.env.NODE_ENV === 'development' ? error.message : null
+    return { error: msg, notifications: [] }
+  }
   return { error: null, notifications: notifications ?? [] }
 }
 

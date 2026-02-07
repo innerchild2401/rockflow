@@ -50,16 +50,22 @@ export async function getCompanyNotificationsAction(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated.', notifications: [] }
 
+  const { data: profile } = await supabase.schema(APP_SCHEMA).from('profiles').select('id').eq('id', user.id).single()
+  const userId = profile?.id ?? user.id
+
   const { data, error } = await supabase
     .schema(APP_SCHEMA)
     .from('company_notifications')
     .select('id, company_id, user_id, type, read_at, created_at, metadata')
     .eq('company_id', companyId)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(limit)
 
-  if (error) return { error: null, notifications: [] }
+  if (error) {
+    const msg = process.env.NODE_ENV === 'development' ? error.message : null
+    return { error: msg, notifications: [] }
+  }
   return { error: null, notifications: (data ?? []) as CompanyNotification[] }
 }
 
@@ -69,11 +75,14 @@ export async function markCompanyNotificationsReadAction(ids: string[]): Promise
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated.' }
 
+  const { data: profile } = await supabase.schema(APP_SCHEMA).from('profiles').select('id').eq('id', user.id).single()
+  const userId = profile?.id ?? user.id
+
   const { error } = await supabase
     .schema(APP_SCHEMA)
     .from('company_notifications')
     .update({ read_at: new Date().toISOString() })
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .in('id', ids)
 
   return error ? { error: error.message } : { error: null }
@@ -85,12 +94,15 @@ export async function getCompanyUnreadCountAction(companyId: string): Promise<nu
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return 0
 
+  const { data: profile } = await supabase.schema(APP_SCHEMA).from('profiles').select('id').eq('id', user.id).single()
+  const userId = profile?.id ?? user.id
+
   const { count, error } = await supabase
     .schema(APP_SCHEMA)
     .from('company_notifications')
     .select('id', { count: 'exact', head: true })
     .eq('company_id', companyId)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .is('read_at', null)
 
   if (error) return 0
