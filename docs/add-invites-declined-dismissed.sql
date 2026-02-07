@@ -1,3 +1,4 @@
+-- Run this in Supabase Dashboard → SQL Editor (required for Invites inbox: Accept / Ignore / Refuse).
 -- Add declined_at and dismissed_at to company_invites for inbox flow
 -- declined_at = user explicitly refused; dismissed_at = user ignored (hide from list, link still valid)
 

@@ -2,6 +2,7 @@
 
 import { randomBytes } from 'crypto'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { canManageMembers } from '@/lib/permissions'
 import { upsertProfileFromAuth } from '@/app/actions/profile'
 
@@ -223,7 +224,7 @@ export async function getPendingInviteCountAction(): Promise<{ error: string | n
   return { error: null, count: count ?? 0 }
 }
 
-/** Accept an invite by id (from inbox). Current user's email must match invite. */
+/** Accept an invite by id (from inbox). Validates with user client, then uses admin client so insert bypasses RLS. */
 export async function acceptInviteByIdAction(inviteId: string): Promise<{ error: string | null; slug: string | null }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -239,7 +240,9 @@ export async function acceptInviteByIdAction(inviteId: string): Promise<{ error:
   if (inviteError || !invite) return { error: 'Invite not found.', slug: null }
   if (invite.accepted_at) return { error: 'Invite already accepted.', slug: null }
   if (new Date(invite.expires_at) < new Date()) return { error: 'Invite has expired.', slug: null }
-  if (invite.email.toLowerCase() !== user.email?.toLowerCase()) {
+  const inviteEmailNorm = invite.email?.toLowerCase().trim()
+  const userEmailNorm = user.email?.toLowerCase().trim()
+  if (!inviteEmailNorm || !userEmailNorm || inviteEmailNorm !== userEmailNorm) {
     return { error: 'This invite was sent to a different email address.', slug: null }
   }
 
@@ -254,7 +257,8 @@ export async function acceptInviteByIdAction(inviteId: string): Promise<{ error:
     .single()
 
   const invitedAt = new Date().toISOString()
-  const { error: memberError } = await supabase
+  const admin = createAdminClient()
+  const { error: memberError } = await admin
     .schema(APP_SCHEMA)
     .from('company_members')
     .upsert(
@@ -267,12 +271,10 @@ export async function acceptInviteByIdAction(inviteId: string): Promise<{ error:
       },
       { onConflict: 'company_id,user_id' }
     )
-    .select()
-    .single()
 
   if (memberError) return { error: memberError.message, slug: null }
 
-  await supabase
+  await admin
     .schema(APP_SCHEMA)
     .from('company_invites')
     .update({ accepted_at: invitedAt })
