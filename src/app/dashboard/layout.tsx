@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { upsertProfileFromAuth } from '@/app/actions/profile'
+import { getPendingInviteCountAction } from '@/app/actions/invites'
 import { AppShell } from '@/components/app-shell/AppShell'
 
 const APP_SCHEMA = 'app'
@@ -37,6 +38,8 @@ export default async function DashboardLayout({
     return Array.isArray(c) ? c : c ? [c] : []
   }) as { id: string; name: string; slug: string }[]
 
+  const { count: pendingInviteCount } = await getPendingInviteCountAction()
+
   return (
     <AppShell
       companies={companies}
@@ -45,6 +48,7 @@ export default async function DashboardLayout({
         display_name: profile?.display_name ?? null,
         email: profile?.email ?? user.email ?? null,
       }}
+      pendingInviteCount={pendingInviteCount}
     >
       {children}
     </AppShell>

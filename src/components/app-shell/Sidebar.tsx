@@ -10,12 +10,14 @@ export function Sidebar({
   currentCompany,
   open,
   onClose,
+  pendingInviteCount = 0,
 }: {
   companies: Company[]
   currentSlug: string | null
   currentCompany: Company | null
   open: boolean
   onClose: () => void
+  pendingInviteCount?: number
 }) {
   const pathname = usePathname()
   const base = currentSlug ? `/dashboard/companies/${currentSlug}` : ''
@@ -55,6 +57,20 @@ export function Sidebar({
           }`}
         >
           Companies
+        </Link>
+        <Link
+          href="/dashboard/invites"
+          onClick={onClose}
+          className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium ${
+            pathname === '/dashboard/invites' ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50' : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+          }`}
+        >
+          Invites
+          {pendingInviteCount > 0 && (
+            <span className="ml-auto flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-zinc-900 px-1.5 text-xs font-medium text-white dark:bg-zinc-100 dark:text-zinc-900">
+              {pendingInviteCount > 99 ? '99+' : pendingInviteCount}
+            </span>
+          )}
         </Link>
         {companies.length > 0 && (
           <>

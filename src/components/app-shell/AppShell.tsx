@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
+import { PendingInvitesToast } from './PendingInvitesToast'
 
 export type Company = { id: string; name: string; slug: string }
 export type Profile = { id: string; display_name: string | null; email: string | null }
@@ -12,10 +13,12 @@ export type Profile = { id: string; display_name: string | null; email: string |
 export function AppShell({
   companies,
   profile,
+  pendingInviteCount = 0,
   children,
 }: {
   companies: Company[]
   profile: Profile
+  pendingInviteCount?: number
   children: React.ReactNode
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -38,6 +41,7 @@ export function AppShell({
         currentCompany={currentCompany ?? null}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        pendingInviteCount={pendingInviteCount}
       />
       <main className="pl-0 lg:pl-64">
         <div className="min-h-[calc(100vh-3.5rem)] px-4 py-6 sm:px-6 lg:px-8">
@@ -52,6 +56,7 @@ export function AppShell({
           onClick={() => setSidebarOpen(false)}
         />
       )}
+      <PendingInvitesToast pendingInviteCount={pendingInviteCount} />
     </div>
   )
 }
