@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { canReadDocuments } from '@/lib/permissions'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
+import { NoPermission } from '@/components/ui/NoPermission'
 import ChatClient from './ChatClient'
 
 const APP_SCHEMA = 'app'
@@ -17,17 +18,25 @@ export default async function ChatPage({ params }: { params: Promise<{ slug: str
   if (!company) notFound()
 
   const canRead = await canReadDocuments(company.id)
-  if (!canRead) notFound()
+  if (!canRead) {
+    return (
+      <NoPermission
+        title="You don't have permission to use the Knowledge Base"
+        backHref={`/dashboard/companies/${slug}`}
+        backLabel={company.name}
+      />
+    )
+  }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto flex max-w-3xl flex-col space-y-4 sm:space-y-6">
       <PageHeader
         backHref={`/dashboard/companies/${slug}`}
         backLabel={company.name}
         title="Knowledge Base"
         description="Ask questions answered only from your company documents. Answers include citations and links to source paragraphs."
       />
-      <Card padding="none" className="overflow-hidden">
+      <Card padding="none" className="flex min-h-[55dvh] flex-1 overflow-hidden sm:min-h-[400px]">
         <ChatClient companyId={company.id} slug={slug} />
       </Card>
     </div>

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { canManageMembers } from '@/lib/permissions'
+import { NoPermission } from '@/components/ui/NoPermission'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardHeader, CardContent } from '@/components/ui/Card'
 import MembersList from './MembersList'
@@ -19,7 +20,15 @@ export default async function MembersPage({ params }: { params: Promise<{ slug: 
   if (!company) notFound()
 
   const manageAllowed = await canManageMembers(company.id)
-  if (!manageAllowed) notFound()
+  if (!manageAllowed) {
+    return (
+      <NoPermission
+        title="You don't have permission to view members"
+        backHref={`/dashboard/companies/${slug}`}
+        backLabel={company.name}
+      />
+    )
+  }
 
   const { data: members } = await supabase
     .schema(APP_SCHEMA)

@@ -49,8 +49,8 @@ export default function ChatClient({
   }
 
   return (
-    <div className="flex flex-col rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="flex min-h-[320px] flex-1 flex-col gap-4 overflow-y-auto p-4">
+    <div className="flex min-h-[50dvh] flex-col rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 sm:min-h-[360px]">
+      <div className="flex min-h-[200px] flex-1 flex-col gap-4 overflow-y-auto p-4">
         {messages.length === 0 && (
           <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
             Ask a question. Answers are based only on your company documents and include links to sources.
@@ -104,7 +104,7 @@ export default function ChatClient({
         )}
         <div ref={bottomRef} />
       </div>
-      <form onSubmit={onSubmit} className="border-t border-zinc-200 p-4 dark:border-zinc-700">
+      <form onSubmit={onSubmit} className="shrink-0 border-t border-zinc-200 p-4 dark:border-zinc-700">
         {error && (
           <div className="mb-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/50 dark:text-red-200">
             {error}

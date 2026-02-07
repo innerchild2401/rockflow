@@ -4,12 +4,17 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getNotificationsAction, markNotificationsReadAction, getUnreadNotificationCountAction } from '@/app/actions/task-collaboration'
-import { Badge } from '@/components/ui/Badge'
+import {
+  getCompanyNotificationsAction,
+  markCompanyNotificationsReadAction,
+  getCompanyUnreadCountAction,
+  type CompanyNotification,
+} from '@/app/actions/company-notifications'
 import { Button } from '@/components/ui/Button'
 
 const APP_SCHEMA = 'app'
 
-type Notification = {
+type TaskNotification = {
   id: string
   task_id: string
   type: 'mentioned' | 'assigned' | 'commented' | 'status_changed' | 'document_added' | 'due_date_changed'
@@ -20,20 +25,24 @@ type Notification = {
   created_at: string
 }
 
+type NotificationItem = 
+  | { kind: 'task'; data: TaskNotification }
+  | { kind: 'company'; data: CompanyNotification }
+
 export function NotificationCenter({ companyId, companySlug }: { companyId: string; companySlug: string }) {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
-  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [taskNotifications, setTaskNotifications] = useState<TaskNotification[]>([])
+  const [companyNotifications, setCompanyNotifications] = useState<CompanyNotification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(false)
-  const [filter, setFilter] = useState<Notification['type'] | 'all'>('all')
+  const [filter, setFilter] = useState<TaskNotification['type'] | 'member_joined' | 'all'>('all')
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     loadNotifications()
     loadUnreadCount()
 
-    // Subscribe to new notifications
     const supabase = createClient()
     const channel = supabase
       .channel(`notifications:${companyId}`)
@@ -43,6 +52,18 @@ export function NotificationCenter({ companyId, companySlug }: { companyId: stri
           event: 'INSERT',
           schema: APP_SCHEMA,
           table: 'task_notifications',
+        },
+        () => {
+          loadNotifications()
+          loadUnreadCount()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: APP_SCHEMA,
+          table: 'company_notifications',
         },
         () => {
           loadNotifications()
@@ -70,16 +91,21 @@ export function NotificationCenter({ companyId, companySlug }: { companyId: stri
 
   async function loadNotifications() {
     setLoading(true)
-    const result = await getNotificationsAction(companyId, 50)
-    if (!result.error) {
-      setNotifications(result.notifications as Notification[])
-    }
+    const [taskResult, companyResult] = await Promise.all([
+      getNotificationsAction(companyId, 50),
+      getCompanyNotificationsAction(companyId, 20),
+    ])
+    if (!taskResult.error) setTaskNotifications(taskResult.notifications as TaskNotification[])
+    if (!companyResult.error) setCompanyNotifications(companyResult.notifications)
     setLoading(false)
   }
 
   async function loadUnreadCount() {
-    const count = await getUnreadNotificationCountAction(companyId)
-    setUnreadCount(count)
+    const [taskCount, companyCount] = await Promise.all([
+      getUnreadNotificationCountAction(companyId),
+      getCompanyUnreadCountAction(companyId),
+    ])
+    setUnreadCount((taskCount ?? 0) + (companyCount ?? 0))
   }
 
   async function markAsRead(notificationIds: string[]) {
@@ -88,12 +114,29 @@ export function NotificationCenter({ companyId, companySlug }: { companyId: stri
     await loadUnreadCount()
   }
 
-  const filtered = filter === 'all' 
-    ? notifications 
-    : notifications.filter((n) => n.type === filter)
+  async function markCompanyAsRead(ids: string[]) {
+    await markCompanyNotificationsReadAction(ids)
+    await loadNotifications()
+    await loadUnreadCount()
+  }
 
-  const unread = filtered.filter((n) => !n.read_at)
-  const read = filtered.filter((n) => n.read_at)
+  const companyItems: NotificationItem[] = companyNotifications.map((n) => ({ kind: 'company', data: n }))
+  const taskItems: NotificationItem[] = taskNotifications.map((n) => ({ kind: 'task', data: n }))
+  const allItems: NotificationItem[] = [...companyItems, ...taskItems].sort(
+    (a, b) => new Date(b.data.created_at).getTime() - new Date(a.data.created_at).getTime()
+  )
+
+  const filtered =
+    filter === 'all'
+      ? allItems
+      : filter === 'member_joined'
+        ? allItems.filter((i) => i.kind === 'company' && i.data.type === 'member_joined')
+        : allItems.filter((i) => i.kind === 'task' && (i.data as TaskNotification).type === filter)
+
+  const unread = filtered.filter((i) => !i.data.read_at)
+  const read = filtered.filter((i) => i.data.read_at)
+  const unreadTaskIds = unread.filter((i) => i.kind === 'task').map((i) => i.data.id)
+  const unreadCompanyIds = unread.filter((i) => i.kind === 'company').map((i) => i.data.id)
 
   return (
     <div ref={menuRef} className="relative">
@@ -122,7 +165,10 @@ export function NotificationCenter({ companyId, companySlug }: { companyId: stri
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => markAsRead(unread.map((n) => n.id))}
+                  onClick={() => {
+                    if (unreadTaskIds.length) markAsRead(unreadTaskIds)
+                    if (unreadCompanyIds.length) markCompanyAsRead(unreadCompanyIds)
+                  }}
                   className="text-xs"
                 >
                   Mark all read
@@ -130,7 +176,7 @@ export function NotificationCenter({ companyId, companySlug }: { companyId: stri
               )}
             </div>
             <div className="mt-2 flex gap-1 overflow-x-auto">
-              {(['all', 'mentioned', 'commented', 'assigned', 'document_added'] as const).map((f) => (
+              {(['all', 'member_joined', 'mentioned', 'commented', 'assigned', 'document_added'] as const).map((f) => (
                 <button
                   key={f}
                   type="button"
@@ -141,7 +187,7 @@ export function NotificationCenter({ companyId, companySlug }: { companyId: stri
                       : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
                   }`}
                 >
-                  {f === 'all' ? 'All' : TYPE_LABELS[f]}
+                  {f === 'all' ? 'All' : f === 'member_joined' ? 'New member' : TASK_TYPE_LABELS[f]}
                 </button>
               ))}
             </div>
@@ -155,14 +201,19 @@ export function NotificationCenter({ companyId, companySlug }: { companyId: stri
               <>
                 {unread.length > 0 && (
                   <div className="px-2 py-1">
-                    {unread.map((n) => (
-                      <NotificationItem
-                        key={n.id}
-                        notification={n}
-                        onMarkRead={() => markAsRead([n.id])}
+                    {unread.map((item) => (
+                      <NotificationRow
+                        key={item.kind + item.data.id}
+                        item={item}
+                        companySlug={companySlug}
+                        onMarkRead={() => {
+                          if (item.kind === 'task') markAsRead([item.data.id])
+                          else markCompanyAsRead([item.data.id])
+                        }}
                         onNavigate={() => {
                           setIsOpen(false)
-                          router.push(`/dashboard/companies/${companySlug}/tasks/${n.task_id}`)
+                          if (item.kind === 'task') router.push(`/dashboard/companies/${companySlug}/tasks/${(item.data as TaskNotification).task_id}`)
+                          else router.push(`/dashboard/companies/${companySlug}/members`)
                         }}
                       />
                     ))}
@@ -175,14 +226,19 @@ export function NotificationCenter({ companyId, companySlug }: { companyId: stri
                 )}
                 {read.length > 0 && (
                   <div className="px-2 py-1">
-                    {read.map((n) => (
-                      <NotificationItem
-                        key={n.id}
-                        notification={n}
-                        onMarkRead={() => markAsRead([n.id])}
+                    {read.map((item) => (
+                      <NotificationRow
+                        key={item.kind + item.data.id}
+                        item={item}
+                        companySlug={companySlug}
+                        onMarkRead={() => {
+                          if (item.kind === 'task') markAsRead([item.data.id])
+                          else markCompanyAsRead([item.data.id])
+                        }}
                         onNavigate={() => {
                           setIsOpen(false)
-                          router.push(`/dashboard/companies/${companySlug}/tasks/${n.task_id}`)
+                          if (item.kind === 'task') router.push(`/dashboard/companies/${companySlug}/tasks/${(item.data as TaskNotification).task_id}`)
+                          else router.push(`/dashboard/companies/${companySlug}/members`)
                         }}
                       />
                     ))}
@@ -197,7 +253,7 @@ export function NotificationCenter({ companyId, companySlug }: { companyId: stri
   )
 }
 
-const TYPE_LABELS: Record<Notification['type'], string> = {
+const TASK_TYPE_LABELS: Record<TaskNotification['type'], string> = {
   mentioned: 'Mentioned you',
   assigned: 'Assigned to you',
   commented: 'Commented',
@@ -206,24 +262,33 @@ const TYPE_LABELS: Record<Notification['type'], string> = {
   due_date_changed: 'Due date changed',
 }
 
-function NotificationItem({
-  notification,
+function NotificationRow({
+  item,
+  companySlug,
   onMarkRead,
   onNavigate,
 }: {
-  notification: Notification
+  item: NotificationItem
+  companySlug: string
   onMarkRead: () => void
   onNavigate: () => void
 }) {
+  const { data } = item
+  const label =
+    item.kind === 'company' && data.type === 'member_joined'
+      ? `New member joined: ${(data.metadata as { new_member_name?: string })?.new_member_name ?? 'Someone'}. Review permissions.`
+      : item.kind === 'task'
+        ? TASK_TYPE_LABELS[(data as TaskNotification).type]
+        : ''
   return (
     <button
       type="button"
       onClick={() => {
-        if (!notification.read_at) onMarkRead()
+        if (!data.read_at) onMarkRead()
         onNavigate()
       }}
       className={`w-full rounded-lg p-3 text-left transition-colors ${
-        notification.read_at
+        data.read_at
           ? 'hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
           : 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/50'
       }`}
@@ -231,15 +296,13 @@ function NotificationItem({
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-zinc-900 dark:text-zinc-50">
-              {TYPE_LABELS[notification.type]}
-            </span>
-            {!notification.read_at && (
-              <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400" />
+            <span className="text-xs font-medium text-zinc-900 dark:text-zinc-50">{label}</span>
+            {!data.read_at && (
+              <span className="h-2 w-2 shrink-0 rounded-full bg-blue-600 dark:bg-blue-400" />
             )}
           </div>
           <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            {new Date(notification.created_at).toLocaleString()}
+            {new Date(data.created_at).toLocaleString()}
           </p>
         </div>
       </div>

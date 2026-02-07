@@ -3,6 +3,7 @@
 import { randomBytes } from 'crypto'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { notifyAdminsNewMemberAction } from '@/app/actions/company-notifications'
 import { canManageMembers } from '@/lib/permissions'
 import { upsertProfileFromAuth } from '@/app/actions/profile'
 
@@ -279,6 +280,15 @@ export async function acceptInviteByIdAction(inviteId: string): Promise<{ error:
     .from('company_invites')
     .update({ accepted_at: invitedAt })
     .eq('id', invite.id)
+
+  const { data: profile } = await supabase
+    .schema(APP_SCHEMA)
+    .from('profiles')
+    .select('display_name')
+    .eq('id', user.id)
+    .single()
+  const newMemberName = profile?.display_name?.trim() || user.email?.split('@')[0] || 'New member'
+  await notifyAdminsNewMemberAction(invite.company_id, user.id, newMemberName)
 
   return { error: null, slug: company?.slug ?? null }
 }

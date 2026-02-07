@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { canReadTasks, canCreateTasks, canEditTasks } from '@/lib/permissions'
+import { NoPermission } from '@/components/ui/NoPermission'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import TasksToolbar from './TasksToolbar'
@@ -18,7 +19,15 @@ export default async function TasksPage({ params }: { params: Promise<{ slug: st
   if (!company) notFound()
 
   const canRead = await canReadTasks(company.id)
-  if (!canRead) notFound()
+  if (!canRead) {
+    return (
+      <NoPermission
+        title="You don't have permission to view tasks"
+        backHref={`/dashboard/companies/${slug}`}
+        backLabel={company.name}
+      />
+    )
+  }
 
   const canCreate = await canCreateTasks(company.id)
   const canEdit = await canEditTasks(company.id)

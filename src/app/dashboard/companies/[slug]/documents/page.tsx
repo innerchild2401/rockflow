@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { canReadDocuments, canManageFolders, canCreateDocuments } from '@/lib/permissions'
+import { NoPermission } from '@/components/ui/NoPermission'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import DocumentsToolbar from './DocumentsToolbar'
@@ -27,7 +28,15 @@ export default async function DocumentsPage({
   if (!company) notFound()
 
   const canRead = await canReadDocuments(company.id)
-  if (!canRead) notFound()
+  if (!canRead) {
+    return (
+      <NoPermission
+        title="You don't have permission to view documents"
+        backHref={`/dashboard/companies/${slug}`}
+        backLabel={company.name}
+      />
+    )
+  }
 
   const canManageFolder = await canManageFolders(company.id)
   const canCreate = await canCreateDocuments(company.id)

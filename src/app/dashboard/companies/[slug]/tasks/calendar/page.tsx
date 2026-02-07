@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { canReadTasks, canEditTasks } from '@/lib/permissions'
+import { NoPermission } from '@/components/ui/NoPermission'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import TasksCalendar from './TasksCalendar'
@@ -20,7 +21,15 @@ export default async function TasksCalendarPage({
   if (!company) notFound()
 
   const canRead = await canReadTasks(company.id)
-  if (!canRead) notFound()
+  if (!canRead) {
+    return (
+      <NoPermission
+        title="You don't have permission to view the calendar"
+        backHref={`/dashboard/companies/${slug}`}
+        backLabel={company.name}
+      />
+    )
+  }
   
   const canEdit = await canEditTasks(company.id)
 

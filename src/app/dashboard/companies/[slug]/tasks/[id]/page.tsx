@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { canReadTasks, canEditTasks, canDeleteTasks } from '@/lib/permissions'
+import { NoPermission } from '@/components/ui/NoPermission'
 import { PageHeader } from '@/components/ui/PageHeader'
 import TaskDetail from './TaskDetail'
 import TaskChat from './TaskChat'
@@ -22,7 +23,15 @@ export default async function TaskPage({
   if (!company) notFound()
 
   const canRead = await canReadTasks(company.id)
-  if (!canRead) notFound()
+  if (!canRead) {
+    return (
+      <NoPermission
+        title="You don't have permission to view this task"
+        backHref={`/dashboard/companies/${slug}/tasks`}
+        backLabel="Tasks"
+      />
+    )
+  }
 
   const { data: task } = await supabase
     .schema(APP_SCHEMA)

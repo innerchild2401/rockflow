@@ -45,14 +45,14 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
   }
 
   return (
-    <Card padding="none" className="flex flex-col overflow-hidden">
-      <div className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-700">
+    <Card padding="none" className="flex min-h-[50dvh] flex-col overflow-hidden sm:min-h-[280px]">
+      <div className="shrink-0 border-b border-zinc-200 px-4 py-3 dark:border-zinc-700 sm:px-6 sm:py-4">
         <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Team feed</h2>
         <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
           Share what you&apos;re working on, ask for help, or post updates.
         </p>
       </div>
-      <div ref={listRef} className="min-h-[200px] flex-1 overflow-y-auto px-6 py-4">
+      <div ref={listRef} className="min-h-[200px] flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4">
         {loading && (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
@@ -110,7 +110,7 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
       </div>
       <form
         onSubmit={handleSubmit}
-        className="border-t border-zinc-200 px-6 py-3 dark:border-zinc-700"
+        className="shrink-0 border-t border-zinc-200 px-4 py-3 dark:border-zinc-700 sm:px-6"
       >
         {postError && (
           <p className="mb-2 text-sm text-red-600 dark:text-red-400">{postError}</p>
