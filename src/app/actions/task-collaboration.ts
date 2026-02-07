@@ -153,13 +153,12 @@ export async function createNotificationForWatchers(
   await supabase.schema(APP_SCHEMA).from('task_notifications').insert(notifications)
 }
 
-/** Get unread notification count for current user. */
+/** Get unread task notification count. Returns 0 if table missing or no tasks. */
 export async function getUnreadNotificationCountAction(companyId: string): Promise<number> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return 0
   
-  // Get task IDs for this company
   const { data: tasks } = await supabase
     .schema(APP_SCHEMA)
     .from('tasks')
@@ -168,7 +167,7 @@ export async function getUnreadNotificationCountAction(companyId: string): Promi
   const taskIds = tasks?.map((t) => t.id) ?? []
   if (taskIds.length === 0) return 0
   
-  const { count: unreadCount } = await supabase
+  const { count: unreadCount, error } = await supabase
     .schema(APP_SCHEMA)
     .from('task_notifications')
     .select('id', { count: 'exact', head: true })
@@ -176,6 +175,7 @@ export async function getUnreadNotificationCountAction(companyId: string): Promi
     .is('read_at', null)
     .in('task_id', taskIds)
   
+  if (error) return 0
   return unreadCount ?? 0
 }
 
@@ -195,13 +195,12 @@ export async function markNotificationsReadAction(notificationIds: string[]) {
   return error ? { error: error.message } : { error: null }
 }
 
-/** Get notifications for current user. */
+/** Get notifications for current user. Returns [] if table missing or no tasks. */
 export async function getNotificationsAction(companyId: string, limit = 50) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated.', notifications: [] }
   
-  // Get task IDs for this company
   const { data: tasks } = await supabase
     .schema(APP_SCHEMA)
     .from('tasks')
@@ -219,8 +218,7 @@ export async function getNotificationsAction(companyId: string, limit = 50) {
     .order('created_at', { ascending: false })
     .limit(limit)
   
-  if (error) return { error: error.message, notifications: [] }
-  
+  if (error) return { error: null, notifications: [] }
   return { error: null, notifications: notifications ?? [] }
 }
 

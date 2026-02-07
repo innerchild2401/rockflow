@@ -261,7 +261,7 @@ export default function TaskChat({
 
 
   return (
-    <div className="flex h-[calc(100vh-14rem)] flex-col rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 sm:h-[calc(100vh-12rem)] lg:h-[calc(100vh-10rem)]">
+    <div className="flex min-h-[55dvh] flex-col rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 sm:min-h-[60dvh] sm:h-[calc(100vh-12rem)] lg:h-[calc(100dvh-10rem)]">
       {/* Header */}
       <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -317,10 +317,10 @@ export default function TaskChat({
         </div>
       )}
 
-      {/* Messages/Activity Feed */}
-      <div className="flex min-h-0 flex-1 flex-col">
+      {/* Messages/Activity Feed - min height on mobile so chat is readable */}
+      <div className="flex min-h-[40dvh] min-w-0 flex-1 flex-col sm:min-h-0">
         {/* Activity Feed Controls */}
-        <div className="border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
+        <div className="shrink-0 border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex gap-1 overflow-x-auto">
               {(['all', 'comments', 'attachments'] as const).map((f) => (
@@ -347,7 +347,7 @@ export default function TaskChat({
             />
           </div>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+        <div className="min-h-[200px] min-w-0 flex-1 overflow-y-auto px-4 py-4 text-base sm:min-h-0 sm:text-sm">
           {error && (
             <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/50 dark:text-red-200">
               {error}

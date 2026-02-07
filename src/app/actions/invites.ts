@@ -281,14 +281,18 @@ export async function acceptInviteByIdAction(inviteId: string): Promise<{ error:
     .update({ accepted_at: invitedAt })
     .eq('id', invite.id)
 
-  const { data: profile } = await supabase
-    .schema(APP_SCHEMA)
-    .from('profiles')
-    .select('display_name')
-    .eq('id', user.id)
-    .single()
-  const newMemberName = profile?.display_name?.trim() || user.email?.split('@')[0] || 'New member'
-  await notifyAdminsNewMemberAction(invite.company_id, user.id, newMemberName)
+  try {
+    const { data: profile } = await supabase
+      .schema(APP_SCHEMA)
+      .from('profiles')
+      .select('display_name')
+      .eq('id', user.id)
+      .single()
+    const newMemberName = profile?.display_name?.trim() || user.email?.split('@')[0] || 'New member'
+    await notifyAdminsNewMemberAction(invite.company_id, user.id, newMemberName)
+  } catch {
+    // company_notifications table may not exist yet; accept still succeeds
+  }
 
   return { error: null, slug: company?.slug ?? null }
 }

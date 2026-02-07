@@ -41,7 +41,7 @@ export async function notifyAdminsNewMemberAction(
   await admin.schema(APP_SCHEMA).from('company_notifications').insert(rows)
 }
 
-/** Get company-level notifications for the current user in a company. */
+/** Get company-level notifications for the current user in a company. Returns [] if table missing. */
 export async function getCompanyNotificationsAction(
   companyId: string,
   limit = 20
@@ -59,7 +59,7 @@ export async function getCompanyNotificationsAction(
     .order('created_at', { ascending: false })
     .limit(limit)
 
-  if (error) return { error: error.message, notifications: [] }
+  if (error) return { error: null, notifications: [] }
   return { error: null, notifications: (data ?? []) as CompanyNotification[] }
 }
 
@@ -79,13 +79,13 @@ export async function markCompanyNotificationsReadAction(ids: string[]): Promise
   return error ? { error: error.message } : { error: null }
 }
 
-/** Get unread company notification count for current user in company. */
+/** Get unread company notification count. Returns 0 if table missing. */
 export async function getCompanyUnreadCountAction(companyId: string): Promise<number> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return 0
 
-  const { count } = await supabase
+  const { count, error } = await supabase
     .schema(APP_SCHEMA)
     .from('company_notifications')
     .select('id', { count: 'exact', head: true })
@@ -93,5 +93,6 @@ export async function getCompanyUnreadCountAction(companyId: string): Promise<nu
     .eq('user_id', user.id)
     .is('read_at', null)
 
+  if (error) return 0
   return count ?? 0
 }

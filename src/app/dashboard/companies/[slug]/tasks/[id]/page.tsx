@@ -139,7 +139,7 @@ export default async function TaskPage({
       <PageHeader backHref={`/dashboard/companies/${slug}/tasks`} backLabel="Tasks" title="Task" />
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Sidebar - Task Info & Quick Actions */}
-        <div className="lg:col-span-1">
+        <div className="min-w-0 lg:col-span-1">
           <TaskDetail
             companyId={company.id}
             taskId={task.id}
@@ -151,8 +151,8 @@ export default async function TaskPage({
             availableDocuments={allDocuments ?? []}
           />
         </div>
-        {/* Main - Chat Interface */}
-        <div className="lg:col-span-2">
+        {/* Main - Chat Interface; min height on mobile so chat is readable */}
+        <div className="min-h-[55dvh] min-w-0 sm:min-h-[60dvh] lg:col-span-2">
           <TaskChat
             companyId={company.id}
             taskId={task.id}
