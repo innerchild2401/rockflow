@@ -387,7 +387,7 @@ export default function TaskChat({
     <div
       className={
         isChatOnly
-          ? 'flex min-h-0 min-w-0 flex-1 flex-col rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900'
+          ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900'
           : 'flex min-h-[55dvh] flex-col rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 sm:min-h-[60dvh] sm:h-[calc(100vh-12rem)] lg:h-[calc(100dvh-10rem)]'
       }
     >
@@ -626,9 +626,9 @@ export default function TaskChat({
         </div>
       </div>
 
-      {/* Input Area */}
+      {/* Input Area - shrink-0 so it stays anchored at bottom */}
       {canEdit && (
-        <div className="relative border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
+        <div className="shrink-0 border-t border-zinc-200 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900">
           <form onSubmit={onSubmitMessage} className="relative">
             <div className="relative">
               <textarea

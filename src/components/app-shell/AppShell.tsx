@@ -29,7 +29,7 @@ export function AppShell({
   const currentCompany = companies.find((c) => c.slug === currentSlug)
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
+    <div className="flex min-h-[100dvh] flex-col bg-[var(--background)]">
       <TopBar
         profile={profile}
         currentCompany={currentCompany ?? null}
@@ -43,8 +43,8 @@ export function AppShell({
         onClose={() => setSidebarOpen(false)}
         pendingInviteCount={pendingInviteCount}
       />
-      <main className="pl-0 lg:pl-64">
-        <div className="min-h-[calc(100vh-3.5rem)] px-4 py-6 sm:px-6 lg:px-8">
+      <main className="flex min-h-0 flex-1 flex-col pl-0 lg:pl-64">
+        <div className="flex min-h-0 flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8">
           {children}
         </div>
       </main>

@@ -39,16 +39,23 @@ export default async function CompanyPage({
 
   return (
     <div className="mx-auto flex min-h-[100dvh] max-w-4xl flex-col md:min-h-0 md:block">
-      <PageHeader
-        backHref="/dashboard/companies"
-        backLabel="Companies"
-        title={company.name}
-        description="Past hour recap and team feed"
-        action={<Badge variant="outline">{membership.role}</Badge>}
-      />
-
-      <div className="mt-4 flex min-h-0 flex-1 flex-col md:mt-8 md:block">
-        <CompanyPageLayout companyId={company.id} currentUserId={user.id} />
+      {/* Desktop: full page header. Mobile: back lives inside CompanyPageLayout to save space */}
+      <div className="mb-8 hidden flex-col gap-4 sm:flex-row sm:items-start sm:justify-between md:mb-0 md:flex">
+        <PageHeader
+          backHref="/dashboard/companies"
+          backLabel="Companies"
+          title={company.name}
+          description="Past hour recap and team feed"
+          action={<Badge variant="outline">{membership.role}</Badge>}
+        />
+      </div>
+      <div className="mt-0 flex min-h-0 flex-1 flex-col md:mt-8 md:block">
+        <CompanyPageLayout
+          companyId={company.id}
+          currentUserId={user.id}
+          backHref="/dashboard/companies"
+          backLabel="Companies"
+        />
       </div>
     </div>
   )

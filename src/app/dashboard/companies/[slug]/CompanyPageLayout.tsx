@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import CompanyRecapCard from './CompanyRecapCard'
 import CompanyFeed from './CompanyFeed'
 
@@ -9,17 +10,32 @@ type TabId = 'feed' | 'recap'
 export default function CompanyPageLayout({
   companyId,
   currentUserId,
+  backHref,
+  backLabel,
 }: {
   companyId: string
   currentUserId: string
+  backHref?: string
+  backLabel?: string
 }) {
   const [activeTab, setActiveTab] = useState<TabId>('feed')
   const [feedNewCount, setFeedNewCount] = useState(0)
 
   return (
     <>
-      {/* Mobile: tabs at top, content fills viewport below */}
+      {/* Mobile: compact back row + tabs, then content fills viewport */}
       <div className="flex min-h-0 flex-1 flex-col md:hidden">
+        {backHref && (
+          <div className="shrink-0 border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
+            <Link
+              href={backHref}
+              className="inline-flex items-center gap-1 text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+            >
+              <span aria-hidden>←</span>
+              {backLabel ?? 'Back'}
+            </Link>
+          </div>
+        )}
         <div className="shrink-0 border-b border-zinc-200 dark:border-zinc-700">
           <div className="flex">
             <button

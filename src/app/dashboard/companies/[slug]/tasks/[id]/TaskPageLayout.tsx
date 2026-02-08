@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 
 type TabId = 'details' | 'attachments' | 'chat'
 
@@ -9,11 +10,15 @@ export default function TaskPageLayout({
   attachmentsSlot,
   chatTabSlot,
   chatFullSlot,
+  backHref,
+  backLabel,
 }: {
   detailsSlot: React.ReactNode
   attachmentsSlot: React.ReactNode
   chatTabSlot: React.ReactNode
   chatFullSlot: React.ReactNode
+  backHref?: string
+  backLabel?: string
 }) {
   const [activeTab, setActiveTab] = useState<TabId>('details')
 
@@ -25,8 +30,19 @@ export default function TaskPageLayout({
 
   return (
     <>
-      {/* Mobile/tablet: tabs at top + tab content fills remaining viewport */}
+      {/* Mobile/tablet: compact back row + tabs, then content fills viewport */}
       <div className="flex min-h-0 flex-1 flex-col lg:hidden">
+        {backHref && (
+          <div className="shrink-0 border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
+            <Link
+              href={backHref}
+              className="inline-flex items-center gap-1 text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+            >
+              <span aria-hidden>←</span>
+              {backLabel ?? 'Back'}
+            </Link>
+          </div>
+        )}
         <div className="shrink-0 border-b border-zinc-200 dark:border-zinc-700">
           <div className="flex">
             {tabs.map((tab) => (
@@ -57,8 +73,8 @@ export default function TaskPageLayout({
             </div>
           )}
           {activeTab === 'chat' && (
-            /* Fixed height on mobile so chat area is bounded and input sticks to bottom (dashboard main doesn't constrain height) */
-            <div className="flex h-[calc(100dvh-12rem)] min-h-[280px] min-w-0 flex-col overflow-hidden sm:h-[calc(100dvh-11rem)]">
+            /* Flex-1 so chat expands to fill all space below tabs; input sticks to bottom */
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               {chatTabSlot}
             </div>
           )}
