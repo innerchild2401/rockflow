@@ -114,6 +114,7 @@ export default function TaskChat({
     { comment: CommentNode; parentQuote?: { author: string; body: string }; status: 'sending' | 'sent' }[]
   >([])
   const attachButtonRef = useRef<HTMLButtonElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
   const { toasts, addToast, removeToast } = useToast()
 
   const currentUserDisplayName =
@@ -226,6 +227,18 @@ export default function TaskChat({
     if (t <= readAtMs) seenActivities.push(a)
     else newActivities.push(a)
   }
+
+  // Scroll to bottom after new comments/attachments (defer so DOM has laid out new content)
+  useEffect(() => {
+    if (activities.length === 0) return
+    const el = listRef.current
+    if (!el) return
+    const scrollToBottom = () => {
+      el.scrollTop = el.scrollHeight
+    }
+    const id = requestAnimationFrame(() => requestAnimationFrame(scrollToBottom))
+    return () => cancelAnimationFrame(id)
+  }, [activities.length])
 
   const urgency = getUrgency(taskDueDate)
   const mentionSuggestions = mentionQuery
@@ -487,7 +500,10 @@ export default function TaskChat({
           </div>
         )}
         {/* Only this area scrolls; header/filters above and input below stay fixed */}
-        <div className={`min-w-0 flex-1 overflow-y-auto text-base sm:text-sm ${isChatOnly ? 'min-h-0 px-4 py-3 sm:px-6 sm:py-4' : 'px-4 py-4 min-h-[200px] sm:min-h-0'}`}>
+        <div
+          ref={listRef}
+          className={`min-w-0 flex-1 overflow-y-auto text-base sm:text-sm ${isChatOnly ? 'min-h-0 px-4 py-3 sm:px-6 sm:py-4' : 'px-4 py-4 min-h-[200px] sm:min-h-0'}`}
+        >
           <div className="space-y-4">
           {seenActivities.map((activity) => {
             if (activity.type === 'attachment') {

@@ -78,10 +78,16 @@ export default function CompanyFeed({
     onNewCountChange?.(newPosts.length)
   }, [newPosts.length, onNewCountChange])
 
+  // Scroll to bottom after new messages (defer so DOM has laid out new content)
   useEffect(() => {
-    if (displayPosts.length > 0 && listRef.current) {
-      listRef.current.scrollTop = listRef.current.scrollHeight
+    if (displayPosts.length === 0) return
+    const el = listRef.current
+    if (!el) return
+    const scrollToBottom = () => {
+      el.scrollTop = el.scrollHeight
     }
+    const id = requestAnimationFrame(() => requestAnimationFrame(scrollToBottom))
+    return () => cancelAnimationFrame(id)
   }, [displayPosts.length])
 
   async function handleSubmit(e: React.FormEvent) {

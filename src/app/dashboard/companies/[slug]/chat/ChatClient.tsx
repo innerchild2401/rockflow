@@ -22,8 +22,13 @@ export default function ChatClient({
   const [error, setError] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
+  // Scroll to bottom after new messages (defer so DOM has laid out new content)
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const el = bottomRef.current
+    if (!el) return
+    const scrollToBottom = () => el.scrollIntoView({ behavior: 'smooth' })
+    const id = requestAnimationFrame(() => requestAnimationFrame(scrollToBottom))
+    return () => cancelAnimationFrame(id)
   }, [messages])
 
   async function onSubmit(e: React.FormEvent) {
