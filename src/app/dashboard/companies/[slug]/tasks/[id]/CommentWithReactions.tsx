@@ -27,6 +27,9 @@ type Reaction = {
 export function CommentWithReactions({
   comment,
   depth,
+  parentQuote,
+  showReplies = true,
+  sendStatus,
   companyId,
   taskId,
   currentUserId,
@@ -40,6 +43,9 @@ export function CommentWithReactions({
 }: {
   comment: CommentNode
   depth: number
+  parentQuote?: { author: string; body: string }
+  showReplies?: boolean
+  sendStatus?: 'sending' | 'sent'
   companyId: string
   taskId: string
   currentUserId: string | null
@@ -111,7 +117,7 @@ export function CommentWithReactions({
   }, {} as Record<string, Reaction[]>)
 
   const isThreaded = depth > 0
-  const hasReplies = comment.replies && comment.replies.length > 0
+  const hasReplies = showReplies && comment.replies && comment.replies.length > 0
   const isOwn = currentUserId !== null && comment.user_id === currentUserId
 
   return (
@@ -121,8 +127,8 @@ export function CommentWithReactions({
           isThreaded && !isOwn
             ? 'bg-zinc-50/50 dark:bg-zinc-800/30'
             : isOwn
-              ? 'bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900'
-              : 'bg-zinc-50 dark:bg-zinc-800/50'
+              ? 'bg-blue-600 text-white dark:bg-blue-500'
+              : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200'
         }`}
       >
         <div className={`flex items-start gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
@@ -132,16 +138,43 @@ export function CommentWithReactions({
           </div>
           
           <div className="min-w-0 flex-1">
+            {/* Quoted message (WhatsApp-style reply reference) */}
+            {parentQuote && (
+              <div className={`mb-2 border-l-2 pl-2 text-xs ${isOwn ? 'border-blue-400/60 text-blue-100' : 'border-zinc-300 dark:border-zinc-500'}`}>
+                <span className={isOwn ? 'font-medium text-blue-100' : 'font-medium text-zinc-600 dark:text-zinc-400'}>{parentQuote.author}</span>
+                <p className={`mt-0.5 truncate ${isOwn ? 'text-blue-100/90' : 'text-zinc-500 dark:text-zinc-500'}`}>{parentQuote.body}</p>
+              </div>
+            )}
             {/* Header */}
             <div className={`flex flex-wrap items-center gap-2 ${isOwn ? 'flex-row-reverse justify-end' : 'justify-between'}`}>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-zinc-900 dark:text-zinc-50">{comment.author}</span>
-                {isThreaded && (
+                {isThreaded && !parentQuote && (
                   <span className="text-xs text-zinc-400 dark:text-zinc-500">replied</span>
                 )}
               </div>
-              <span className={`text-xs ${isOwn && !isThreaded ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-400 dark:text-zinc-500'}`}>
-                {new Date(comment.created_at).toLocaleString()}
+              <span className="flex items-center gap-1">
+                <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                  {new Date(comment.created_at).toLocaleString()}
+                </span>
+                {isOwn && sendStatus && (
+                  <span className="inline-flex" aria-label={sendStatus === 'sending' ? 'Sending' : 'Sent'}>
+                    {sendStatus === 'sending' ? (
+                      <svg className="h-3.5 w-3.5 text-white/80" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                      </svg>
+                    ) : (
+                      <span className="flex -space-x-1">
+                        <svg className="h-3.5 w-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                        </svg>
+                        <svg className="h-3.5 w-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                        </svg>
+                      </span>
+                    )}
+                  </span>
+                )}
               </span>
             </div>
 
@@ -174,7 +207,7 @@ export function CommentWithReactions({
                 </div>
               </div>
             ) : (
-              <p className={`mt-1.5 whitespace-pre-wrap text-sm ${isOwn ? 'text-zinc-100 dark:text-zinc-900 text-right' : 'text-zinc-800 dark:text-zinc-200'}`}>
+              <p className={`mt-1.5 whitespace-pre-wrap text-sm ${isOwn ? 'text-white text-right' : 'text-zinc-800 dark:text-zinc-200'}`}>
                 {highlightMentions(comment.body)}
               </p>
             )}
@@ -206,13 +239,13 @@ export function CommentWithReactions({
 
             {/* Actions */}
             {canEdit && !isEditing && (
-              <div className={`mt-2 flex flex-wrap items-center gap-3 ${isOwn ? 'text-zinc-400 [&_button]:hover:text-zinc-200' : ''}`}>
+              <div className={`mt-2 flex flex-wrap items-center gap-3 ${isOwn ? 'text-blue-100 [&_button]:hover:text-white' : ''}`}>
                 <div className="relative">
                   <button
                     ref={emojiButtonRef}
                     type="button"
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    className={`flex items-center gap-1 rounded px-2 py-1 text-xs ${isOwn ? 'hover:bg-zinc-800' : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-400'}`}
+                    className={`flex items-center gap-1 rounded px-2 py-1 text-xs ${isOwn ? 'hover:bg-blue-500/50' : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-400'}`}
                   >
                     <span>😊</span>
                     <span>React</span>
@@ -234,7 +267,7 @@ export function CommentWithReactions({
                 <button
                   type="button"
                   onClick={handleDelete}
-                  className={isOwn ? 'text-xs text-red-400 hover:text-red-300' : 'text-xs text-red-600 hover:text-red-800 dark:text-red-400'}
+                  className={isOwn ? 'text-xs text-red-200 hover:text-red-100' : 'text-xs text-red-600 hover:text-red-800 dark:text-red-400'}
                 >
                   Delete
                 </button>

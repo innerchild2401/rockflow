@@ -6,9 +6,12 @@ import { Card } from '@/components/ui/Card'
 import { SendIcon } from '@/components/ui/SendIcon'
 import { getCompanyFeedAction, postCompanyFeedAction, type FeedPost } from '@/app/actions/company-feed'
 
+type OptimisticPost = FeedPost & { status: 'sending' | 'sent' }
+
 export default function CompanyFeed({ companyId, currentUserId }: { companyId: string; currentUserId: string }) {
   const router = useRouter()
   const [posts, setPosts] = useState<FeedPost[]>([])
+  const [optimisticPosts, setOptimisticPosts] = useState<OptimisticPost[]>([])
   const [loading, setLoading] = useState(true)
   const [postError, setPostError] = useState<string | null>(null)
   const [body, setBody] = useState('')
@@ -21,31 +24,55 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
     setLoading(false)
     if (r.error) return
     setPosts(r.posts)
+    setOptimisticPosts((prev) => prev.filter((o) => !r.posts.some((p) => p.id === o.id)))
   }
 
   useEffect(() => {
     loadFeed()
   }, [companyId])
 
+  const displayPosts = [...posts]
+  for (const o of optimisticPosts) {
+    if (!displayPosts.some((p) => p.id === o.id)) displayPosts.push(o)
+  }
+  displayPosts.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+
   useEffect(() => {
-    if (!loading && posts.length > 0 && listRef.current) {
+    if (displayPosts.length > 0 && listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight
     }
-  }, [loading, posts.length])
+  }, [displayPosts.length])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const trimmed = body.trim()
     if (!trimmed || submitting) return
-    setSubmitting(true)
     setPostError(null)
+    const tempId = `opt-${Date.now()}`
+    const now = new Date().toISOString()
+    const optimistic: OptimisticPost = {
+      id: tempId,
+      company_id: companyId,
+      user_id: currentUserId,
+      body: trimmed,
+      created_at: now,
+      author_name: 'You',
+      status: 'sending',
+    }
+    setOptimisticPosts((prev) => [...prev, optimistic])
+    setBody('')
+    setSubmitting(true)
     const r = await postCompanyFeedAction(companyId, trimmed)
     setSubmitting(false)
     if (r.error) {
+      setOptimisticPosts((prev) => prev.filter((p) => p.id !== tempId))
       setPostError(r.error)
+      setBody(trimmed)
       return
     }
-    setBody('')
+    setOptimisticPosts((prev) =>
+      prev.map((p) => (p.id === tempId ? { ...p, id: r.id ?? tempId, status: 'sent' as const } : p))
+    )
     await loadFeed()
     router.refresh()
   }
@@ -72,15 +99,16 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
             ))}
           </div>
         )}
-        {!loading && posts.length === 0 && (
+        {!loading && displayPosts.length === 0 && (
           <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
             No posts yet. Be the first to share!
           </p>
         )}
-        {!loading && posts.length > 0 && (
+        {!loading && displayPosts.length > 0 && (
           <ul className="space-y-4">
-            {posts.map((post) => {
+            {displayPosts.map((post) => {
               const isOwn = post.user_id === currentUserId
+              const status = 'status' in post ? (post as OptimisticPost).status : null
               return (
                 <li
                   key={post.id}
@@ -92,19 +120,37 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
                   <div
                     className={`min-w-0 max-w-[85%] rounded-lg px-3 py-2 ${
                       isOwn
-                        ? 'bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900'
-                        : 'bg-zinc-100 dark:bg-zinc-800'
+                        ? 'bg-blue-600 text-white dark:bg-blue-500'
+                        : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200'
                     }`}
                   >
                     <div className={`flex flex-wrap items-baseline gap-2 ${isOwn ? 'flex-row-reverse justify-end' : ''}`}>
                       <span className="text-sm font-medium">
                         {post.author_name}
                       </span>
-                      <span className="text-xs opacity-80">
+                      <span className="text-xs text-zinc-400 dark:text-zinc-500">
                         {new Date(post.created_at).toLocaleString()}
                       </span>
+                      {isOwn && status && (
+                        <span className="ml-0.5 inline-flex" aria-label={status === 'sending' ? 'Sending' : 'Sent'}>
+                          {status === 'sending' ? (
+                            <svg className="h-3.5 w-3.5 text-white/80" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                            </svg>
+                          ) : (
+                            <span className="flex -space-x-1">
+                              <svg className="h-3.5 w-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                              </svg>
+                              <svg className="h-3.5 w-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                              </svg>
+                            </span>
+                          )}
+                        </span>
+                      )}
                     </div>
-                    <p className={`mt-0.5 whitespace-pre-wrap text-sm ${isOwn ? 'text-right' : ''}`}>
+                    <p className={`mt-0.5 whitespace-pre-wrap text-sm ${isOwn ? 'text-right text-white' : ''}`}>
                       {post.body}
                     </p>
                   </div>

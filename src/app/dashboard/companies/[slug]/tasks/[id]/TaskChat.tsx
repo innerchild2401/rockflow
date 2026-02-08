@@ -99,20 +99,73 @@ export default function TaskChat({
   const [showAttachMenu, setShowAttachMenu] = useState(false)
   const [activityFilter, setActivityFilter] = useState<'all' | 'comments' | 'attachments'>('all')
   const [activitySearch, setActivitySearch] = useState('')
+  const [optimisticComments, setOptimisticComments] = useState<
+    { comment: CommentNode; parentQuote?: { author: string; body: string }; status: 'sending' | 'sent' }[]
+  >([])
   const attachButtonRef = useRef<HTMLButtonElement>(null)
   const { toasts, addToast, removeToast } = useToast()
-  
+
+  const currentUserDisplayName =
+    members.find((m) => m.id === currentUserId)?.display_name ||
+    members.find((m) => m.id === currentUserId)?.email ||
+    'You'
+
+  function findCommentById(nodes: CommentNode[], id: string): CommentNode | null {
+    for (const c of nodes) {
+      if (c.id === id) return c
+      if (c.replies?.length) {
+        const found = findCommentById(c.replies, id)
+        if (found) return found
+      }
+    }
+    return null
+  }
+
+  function flatCommentIds(nodes: CommentNode[]): string[] {
+    return nodes.flatMap((c) => [c.id, ...(c.replies ? flatCommentIds(c.replies) : [])])
+  }
+  const serverCommentIds = new Set(flatCommentIds(comments))
+  useEffect(() => {
+    setOptimisticComments((prev) => prev.filter((o) => !serverCommentIds.has(o.comment.id)))
+  }, [comments])
+
   // Enable real-time updates
   useTaskRealtime(taskId, true)
-  
-  // Combine attachments and comments, sort by date
-  type ActivityItem = 
-    | { type: 'comment'; data: CommentNode }
+
+  // Flatten comments (root + replies) into one chronological list so replies appear at bottom (WhatsApp-style)
+  type CommentWithQuote = { comment: CommentNode; parentQuote?: { author: string; body: string } }
+  function flattenComments(nodes: CommentNode[], parent?: { author: string; body: string }): CommentWithQuote[] {
+    const out: CommentWithQuote[] = []
+    for (const c of nodes) {
+      const copy = { ...c, replies: undefined }
+      out.push({ comment: copy, parentQuote: parent })
+      if (c.replies?.length) {
+        const quote = { author: c.author, body: c.body.slice(0, 100) + (c.body.length > 100 ? '…' : '') }
+        out.push(...flattenComments(c.replies, quote))
+      }
+    }
+    return out
+  }
+  const flatComments = flattenComments(comments)
+  const mergedComments: { comment: CommentNode; parentQuote?: { author: string; body: string }; sendStatus?: 'sending' | 'sent' }[] = [
+    ...flatComments.map(({ comment, parentQuote }) => ({ comment, parentQuote })),
+    ...optimisticComments
+      .filter((o) => !serverCommentIds.has(o.comment.id))
+      .map(({ comment, parentQuote, status }) => ({ comment, parentQuote, sendStatus: status })),
+  ]
+
+  type ActivityItem =
+    | { type: 'comment'; data: CommentNode; parentQuote?: { author: string; body: string }; sendStatus?: 'sending' | 'sent' }
     | { type: 'attachment'; data: Document }
-  
+
   const allActivities: ActivityItem[] = [
     ...attachments.map((a) => ({ type: 'attachment' as const, data: a })),
-    ...comments.map((c) => ({ type: 'comment' as const, data: c })),
+    ...mergedComments.map(({ comment, parentQuote, sendStatus }) => ({
+      type: 'comment' as const,
+      data: comment,
+      parentQuote,
+      sendStatus,
+    })),
   ].sort((a, b) => {
     const aDate = a.type === 'attachment' ? (a.data.attached_at || '') : a.data.created_at
     const bDate = b.type === 'attachment' ? (b.data.attached_at || '') : b.data.created_at
@@ -197,16 +250,35 @@ export default function TaskChat({
   async function onSubmitMessage(e: React.FormEvent) {
     e.preventDefault()
     if (!canEdit || !message.trim()) return
-    setLoading(true)
     setError(null)
-    const r = await createTaskCommentAction(companyId, taskId, message.trim(), null)
+    const body = message.trim()
+    const tempId = `opt-${Date.now()}`
+    const now = new Date().toISOString()
+    const optimisticComment: CommentNode = {
+      id: tempId,
+      user_id: currentUserId!,
+      body,
+      created_at: now,
+      updated_at: now,
+      author: currentUserDisplayName,
+    }
+    setOptimisticComments((prev) => [...prev, { comment: optimisticComment, status: 'sending' }])
+    setMessage('')
+    setMentionQuery(null)
+    setLoading(true)
+    const r = await createTaskCommentAction(companyId, taskId, body, null)
     setLoading(false)
     if (r.error) {
+      setOptimisticComments((prev) => prev.filter((o) => o.comment.id !== tempId))
       setError(r.error)
       addToast(r.error, 'error')
+      setMessage(body)
     } else {
-      setMessage('')
-      setMentionQuery(null)
+      setOptimisticComments((prev) =>
+        prev.map((o) =>
+          o.comment.id === tempId ? { ...o, comment: { ...o.comment, id: r.id ?? tempId }, status: 'sent' as const } : o
+        )
+      )
       addToast('Comment posted', 'success')
       router.refresh()
     }
@@ -215,16 +287,42 @@ export default function TaskChat({
   async function onSubmitReply(parentId: string, e: React.FormEvent) {
     e.preventDefault()
     if (!canEdit || !replyBody.trim()) return
-    setLoading(true)
     setError(null)
-    const r = await createTaskCommentAction(companyId, taskId, replyBody.trim(), parentId)
+    const body = replyBody.trim()
+    const parent = findCommentById(comments, parentId)
+    const parentQuote = parent
+      ? { author: parent.author, body: parent.body.slice(0, 100) + (parent.body.length > 100 ? '…' : '') }
+      : undefined
+    const tempId = `opt-${Date.now()}`
+    const now = new Date().toISOString()
+    const optimisticComment: CommentNode = {
+      id: tempId,
+      user_id: currentUserId!,
+      body,
+      created_at: now,
+      updated_at: now,
+      author: currentUserDisplayName,
+    }
+    setOptimisticComments((prev) => [...prev, { comment: optimisticComment, parentQuote, status: 'sending' }])
+    setReplyTo(null)
+    setReplyBody('')
+    setLoading(true)
+    const r = await createTaskCommentAction(companyId, taskId, body, parentId)
     setLoading(false)
     if (r.error) {
+      setOptimisticComments((prev) => prev.filter((o) => o.comment.id !== tempId))
       setError(r.error)
       addToast(r.error, 'error')
+      setReplyTo(parentId)
+      setReplyBody(body)
     } else {
-      setReplyTo(null)
-      setReplyBody('')
+      setOptimisticComments((prev) =>
+        prev.map((o) =>
+          o.comment.id === tempId
+            ? { ...o, comment: { ...o.comment, id: r.id ?? tempId }, status: 'sent' as const }
+            : o
+        )
+      )
       addToast('Reply posted', 'success')
       router.refresh()
     }
@@ -386,11 +484,20 @@ export default function TaskChat({
                 </div>
               )
             } else {
+              const commentActivity = activity as {
+                type: 'comment'
+                data: CommentNode
+                parentQuote?: { author: string; body: string }
+                sendStatus?: 'sending' | 'sent'
+              }
               return (
                 <CommentWithReactions
-                  key={activity.data.id}
-                  comment={activity.data}
+                  key={commentActivity.data.id}
+                  comment={commentActivity.data}
                   depth={0}
+                  parentQuote={commentActivity.parentQuote}
+                  showReplies={false}
+                  sendStatus={commentActivity.sendStatus}
                   companyId={companyId}
                   taskId={taskId}
                   currentUserId={currentUserId}
