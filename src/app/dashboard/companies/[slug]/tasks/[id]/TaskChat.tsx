@@ -8,6 +8,7 @@ import { attachDocumentToTaskAction, detachDocumentFromTaskAction } from '@/app/
 import { setTaskChatReadAction } from '@/app/actions/chat-read'
 import { getMentionSuggestions } from '@/lib/parse-mentions'
 import { Badge } from '@/components/ui/Badge'
+import { Card } from '@/components/ui/Card'
 import { SendIcon } from '@/components/ui/SendIcon'
 import { useToast } from '@/lib/toast'
 import { ToastContainer } from '@/components/ui/Toast'
@@ -383,14 +384,16 @@ export default function TaskChat({
   }
 
 
-  return (
-    <div
-      className={
-        isChatOnly
-          ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900'
-          : 'flex min-h-[55dvh] flex-col rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 sm:min-h-[60dvh] sm:h-[calc(100vh-12rem)] lg:h-[calc(100dvh-10rem)]'
+  const Wrapper = isChatOnly ? Card : 'div'
+  const wrapperProps = isChatOnly
+    ? { padding: 'none' as const, className: 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden' }
+    : {
+        className:
+          'flex min-h-[55dvh] flex-col rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 sm:min-h-[60dvh] sm:h-[calc(100vh-12rem)] lg:h-[calc(100dvh-10rem)]',
       }
-    >
+
+  return (
+    <Wrapper {...wrapperProps}>
       {!isChatOnly && (
         <>
           {/* Header */}
@@ -452,40 +455,37 @@ export default function TaskChat({
 
       {/* Messages/Activity Feed - min-h-0 when chatOnly so only contents scroll, input stays sticky */}
       <div className={`flex min-w-0 flex-1 flex-col ${isChatOnly ? 'min-h-0' : 'min-h-[40dvh] sm:min-h-0'}`}>
-        {/* Activity Feed Controls */}
-        <div className="shrink-0 border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex gap-1 overflow-x-auto">
-              {(['all', 'comments', 'attachments'] as const).map((f) => (
-                <button
-                  key={f}
-                  type="button"
-                  onClick={() => setActivityFilter(f)}
-                  className={`whitespace-nowrap rounded px-2.5 py-1 text-xs font-medium transition-colors ${
-                    activityFilter === f
-                      ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
-                      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-                  }`}
-                >
-                  {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
-                </button>
-              ))}
+        {/* Activity Feed Controls (hidden in chatOnly to match company feed) */}
+        {!isChatOnly && (
+          <div className="shrink-0 border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex gap-1 overflow-x-auto">
+                {(['all', 'comments', 'attachments'] as const).map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setActivityFilter(f)}
+                    className={`whitespace-nowrap rounded px-2.5 py-1 text-xs font-medium transition-colors ${
+                      activityFilter === f
+                        ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
+                        : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+                    }`}
+                  >
+                    {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="text"
+                value={activitySearch}
+                onChange={(e) => setActivitySearch(e.target.value)}
+                placeholder="Search activity…"
+                className="w-full rounded border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50 sm:w-48"
+              />
             </div>
-            <input
-              type="text"
-              value={activitySearch}
-              onChange={(e) => setActivitySearch(e.target.value)}
-              placeholder="Search activity…"
-              className="w-full rounded border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50 sm:w-48"
-            />
           </div>
-        </div>
-        <div className={`min-w-0 flex-1 overflow-y-auto px-4 py-4 text-base sm:text-sm ${isChatOnly ? 'min-h-0' : 'min-h-[200px] sm:min-h-0'}`}>
-          {error && (
-            <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/50 dark:text-red-200">
-              {error}
-            </div>
-          )}
+        )}
+        <div className={`min-w-0 flex-1 overflow-y-auto text-base sm:text-sm ${isChatOnly ? 'min-h-0 px-4 py-3 sm:px-6 sm:py-4' : 'px-4 py-4 min-h-[200px] sm:min-h-0'}`}>
           <div className="space-y-4">
           {seenActivities.map((activity) => {
             if (activity.type === 'attachment') {
@@ -626,91 +626,92 @@ export default function TaskChat({
         </div>
       </div>
 
-      {/* Input Area - shrink-0 so it stays anchored at bottom */}
+      {/* Input Area - shrink-0 so it stays anchored at bottom (match company feed layout) */}
       {canEdit && (
-        <div className="shrink-0 border-t border-zinc-200 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900">
+        <div className="shrink-0 border-t border-zinc-200 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900 sm:px-6">
           <form onSubmit={onSubmitMessage} className="relative">
-            <div className="relative">
+            {error && (
+              <p className="mb-2 text-sm text-red-600 dark:text-red-400">{error}</p>
+            )}
+            <div className="relative flex items-center gap-2">
+              <div className="relative z-50 shrink-0">
+                <button
+                  ref={attachButtonRef}
+                  type="button"
+                  onClick={() => setShowAttachMenu(!showAttachMenu)}
+                  className="rounded p-1.5 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-400"
+                  aria-label="Attach document"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                </button>
+                {showAttachMenu && (
+                  <AttachDocumentMenu
+                    companyId={companyId}
+                    taskId={taskId}
+                    documents={availableDocuments.filter((d) => !attachments.some((a) => a.id === d.id))}
+                    onAttach={() => router.refresh()}
+                    onClose={() => setShowAttachMenu(false)}
+                  />
+                )}
+              </div>
               <textarea
                 ref={textareaRef}
                 value={message}
                 onChange={handleMessageChange}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                    onSubmitMessage(e)
+                    onSubmitMessage(e as unknown as React.FormEvent)
                   }
                 }}
                 placeholder="Type a message… (Ctrl+Enter to send)"
-                rows={3}
-                className="w-full resize-none rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50"
+                rows={2}
+                className="min-w-0 flex-1 resize-none rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50"
               />
-              {mentionSuggestions.length > 0 && mentionQuery && (
-                <div className="absolute bottom-full left-0 z-50 mb-1 w-full max-w-md rounded-lg border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900 sm:max-w-lg">
-                  <div className="border-b border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
-                    Mention someone
-                  </div>
-                  <div className="max-h-48 overflow-y-auto">
-                    {mentionSuggestions.map((m) => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => insertMention(m)}
-                        className="w-full px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs font-medium text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                            {(m.display_name || m.email).charAt(0).toUpperCase()}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">{m.matchText}</div>
-                            <div className="text-xs text-zinc-500 truncate">{m.email}</div>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2">
-                <div className="relative z-50">
-                  <button
-                    ref={attachButtonRef}
-                    type="button"
-                    onClick={() => setShowAttachMenu(!showAttachMenu)}
-                    className="rounded p-1.5 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-400"
-                    aria-label="Attach document"
-                  >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                    </svg>
-                  </button>
-                  {showAttachMenu && (
-                    <AttachDocumentMenu
-                      companyId={companyId}
-                      taskId={taskId}
-                      documents={availableDocuments.filter((d) => !attachments.some((a) => a.id === d.id))}
-                      onAttach={() => router.refresh()}
-                      onClose={() => setShowAttachMenu(false)}
-                    />
-                  )}
-                </div>
-                <span className="text-xs text-zinc-500 dark:text-zinc-400">Type @ to mention</span>
-              </div>
               <button
                 type="submit"
                 disabled={loading || !message.trim()}
                 aria-label="Send"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 sm:h-10 sm:w-10"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
               >
                 {loading ? <span className="text-xs">…</span> : <SendIcon className="h-5 w-5" />}
               </button>
             </div>
+            {mentionSuggestions.length > 0 && mentionQuery && (
+              <div className="absolute bottom-full left-0 z-50 mb-1 w-full max-w-md rounded-lg border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900 sm:max-w-lg">
+                <div className="border-b border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+                  Mention someone
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {mentionSuggestions.map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => insertMention(m)}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs font-medium text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                          {(m.display_name || m.email).charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{m.matchText}</div>
+                          <div className="text-xs text-zinc-500 truncate">{m.email}</div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              Ctrl+Enter to send · Type @ to mention
+            </p>
           </form>
         </div>
       )}
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-    </div>
+    </Wrapper>
   )
 }

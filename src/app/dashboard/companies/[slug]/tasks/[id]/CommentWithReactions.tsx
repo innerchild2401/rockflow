@@ -120,66 +120,60 @@ export function CommentWithReactions({
   const hasReplies = showReplies && comment.replies && comment.replies.length > 0
   const isOwn = currentUserId !== null && comment.user_id === currentUserId
 
-  return (
-    <div className={`${isThreaded ? 'ml-4 sm:ml-8 mt-3' : ''} ${isOwn ? 'flex justify-end' : ''}`}>
-      <div
-        className={`rounded-lg p-3 max-w-[85%] ${
-          isThreaded && !isOwn
-            ? 'bg-stone-50/80 dark:bg-stone-800/40'
-            : isOwn
-              ? 'bg-teal-600 text-white dark:bg-teal-600/90'
-              : 'bg-stone-100 text-stone-800 dark:bg-stone-700 dark:text-stone-200'
-        }`}
-      >
-        <div className={`flex items-start gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
-          {/* Avatar */}
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-100 text-xs font-medium text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">
-            {comment.author.charAt(0).toUpperCase()}
-          </div>
-          
-          <div className="min-w-0 flex-1">
-            {/* Quoted message (WhatsApp-style reply reference) */}
-            {parentQuote && (
-              <div className={`mb-2 border-l-2 pl-2 text-xs ${isOwn ? 'border-teal-400/70 text-teal-50' : 'border-stone-300 dark:border-stone-500'}`}>
-                <span className={isOwn ? 'font-medium text-teal-50' : 'font-medium text-stone-600 dark:text-stone-400'}>{parentQuote.author}</span>
-                <p className={`mt-0.5 truncate ${isOwn ? 'text-teal-50/90' : 'text-stone-500 dark:text-stone-500'}`}>{parentQuote.body}</p>
-              </div>
-            )}
-            {/* Header */}
-            <div className={`flex flex-wrap items-center gap-2 ${isOwn ? 'flex-row-reverse justify-end' : 'justify-between'}`}>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-stone-900 dark:text-stone-50">{comment.author}</span>
-                {isThreaded && !parentQuote && (
-                  <span className="text-xs text-stone-600 dark:text-stone-400">replied</span>
-                )}
-              </div>
-              <span className="flex items-center gap-1">
-                <span className={`text-xs ${isOwn ? 'text-teal-100' : 'text-stone-600 dark:text-stone-300'}`}>
-                  {new Date(comment.created_at).toLocaleString()}
-                </span>
-                {isOwn && sendStatus && (
-                  <span className="inline-flex" aria-label={sendStatus === 'sending' ? 'Sending' : 'Sent'}>
-                    {sendStatus === 'sending' ? (
-                      <svg className="h-3.5 w-3.5 text-white/80" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
-                      </svg>
-                    ) : (
-                      <span className="flex -space-x-1">
-                        <svg className="h-3.5 w-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
-                        </svg>
-                        <svg className="h-3.5 w-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
-                        </svg>
-                      </span>
-                    )}
-                  </span>
-                )}
-              </span>
-            </div>
+  // Match company feed: avatar outside bubble, stone avatar, bubble with px-3 py-2
+  const bubbleClass = `min-w-0 max-w-[85%] rounded-lg px-3 py-2 ${
+    isThreaded && !isOwn
+      ? 'bg-stone-50/80 dark:bg-stone-800/40'
+      : isOwn
+        ? 'bg-teal-600 text-white dark:bg-teal-600/90'
+        : 'bg-stone-100 text-stone-800 dark:bg-stone-700 dark:text-stone-200'
+  }`
 
-            {/* Content */}
-            {isEditing ? (
+  return (
+    <div className={`${isThreaded ? 'ml-4 sm:ml-8 mt-3' : ''} flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
+      {/* Avatar outside bubble (match feed) */}
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-stone-200 text-xs font-medium text-stone-600 dark:bg-stone-600 dark:text-stone-300">
+        {comment.author.charAt(0).toUpperCase()}
+      </div>
+      <div className={bubbleClass}>
+        {/* Quoted message (WhatsApp-style reply reference) */}
+        {parentQuote && (
+          <div className={`mb-2 border-l-2 pl-2 text-xs ${isOwn ? 'border-teal-400/70 text-teal-50' : 'border-stone-300 dark:border-stone-500'}`}>
+            <span className={isOwn ? 'font-medium text-teal-50' : 'font-medium text-stone-600 dark:text-stone-400'}>{parentQuote.author}</span>
+            <p className={`mt-0.5 truncate ${isOwn ? 'text-teal-50/90' : 'text-stone-500 dark:text-stone-500'}`}>{parentQuote.body}</p>
+          </div>
+        )}
+        {/* Header (match feed: author text-sm font-medium, timestamp + status) */}
+        <div className={`flex flex-wrap items-baseline gap-2 ${isOwn ? 'flex-row-reverse justify-end' : ''}`}>
+          <span className="text-sm font-medium">{comment.author}</span>
+          <span className={`text-xs ${isOwn ? 'text-teal-100' : 'text-stone-600 dark:text-stone-300'}`}>
+            {new Date(comment.created_at).toLocaleString()}
+          </span>
+          {isThreaded && !parentQuote && (
+            <span className="text-xs text-stone-600 dark:text-stone-400">replied</span>
+          )}
+          {isOwn && sendStatus && (
+            <span className="ml-0.5 inline-flex" aria-label={sendStatus === 'sending' ? 'Sending' : 'Sent'}>
+              {sendStatus === 'sending' ? (
+                <svg className="h-3.5 w-3.5 text-white/80" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                </svg>
+              ) : (
+                <span className="flex -space-x-1">
+                  <svg className="h-3.5 w-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                  </svg>
+                  <svg className="h-3.5 w-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                  </svg>
+                </span>
+              )}
+            </span>
+          )}
+        </div>
+
+        {/* Content */}
+        {isEditing ? (
               <div className="mt-2">
                 <textarea
                   value={editBody}
@@ -207,7 +201,7 @@ export function CommentWithReactions({
                 </div>
               </div>
             ) : (
-              <p className={`mt-1.5 whitespace-pre-wrap text-sm ${isOwn ? 'text-white text-right' : 'text-stone-800 dark:text-stone-200'}`}>
+              <p className={`mt-0.5 whitespace-pre-wrap text-sm ${isOwn ? 'text-right text-white' : 'text-stone-800 dark:text-stone-200'}`}>
                 {highlightMentions(comment.body)}
               </p>
             )}
@@ -312,10 +306,7 @@ export function CommentWithReactions({
                 </div>
               </form>
             )}
-          </div>
         </div>
-      </div>
-
       {/* Replies */}
       {hasReplies && (
         <div className="mt-2 space-y-2 border-l-2 border-zinc-200 pl-4 dark:border-zinc-700">
