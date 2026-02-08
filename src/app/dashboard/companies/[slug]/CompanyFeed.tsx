@@ -1,16 +1,15 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { SendIcon } from '@/components/ui/SendIcon'
 import { getCompanyFeedAction, postCompanyFeedAction, type FeedPost } from '@/app/actions/company-feed'
 import { getCompanyFeedReadAtAction, setCompanyFeedReadAction } from '@/app/actions/chat-read'
+import { useCompanyFeedRealtime } from './useCompanyFeedRealtime'
 
 type OptimisticPost = FeedPost & { status: 'sending' | 'sent' }
 
 export default function CompanyFeed({ companyId, currentUserId }: { companyId: string; currentUserId: string }) {
-  const router = useRouter()
   const [posts, setPosts] = useState<FeedPost[]>([])
   const [optimisticPosts, setOptimisticPosts] = useState<OptimisticPost[]>([])
   const [effectiveReadAt, setEffectiveReadAt] = useState<string | null>(null)
@@ -33,9 +32,22 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
     setOptimisticPosts((prev) => prev.filter((o) => !feedRes.posts.some((p) => p.id === o.id)))
   }
 
+  async function loadFeedSilent() {
+    const [feedRes, readRes] = await Promise.all([
+      getCompanyFeedAction(companyId),
+      getCompanyFeedReadAtAction(companyId),
+    ])
+    if (feedRes.error) return
+    setPosts(feedRes.posts)
+    setEffectiveReadAt((prev) => prev ?? readRes ?? null)
+    setOptimisticPosts((prev) => prev.filter((o) => !feedRes.posts.some((p) => p.id === o.id)))
+  }
+
   useEffect(() => {
     loadFeed()
   }, [companyId])
+
+  useCompanyFeedRealtime(companyId, true, currentUserId, loadFeedSilent)
 
   useEffect(() => {
     setCompanyFeedReadAction(companyId).then(() => {})
@@ -88,8 +100,7 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
     setOptimisticPosts((prev) =>
       prev.map((p) => (p.id === tempId ? { ...p, id: r.id ?? tempId, status: 'sent' as const } : p))
     )
-    await loadFeed()
-    router.refresh()
+    // Don't loadFeed() or router.refresh() – post is already shown; avoids loading skeleton flash
   }
 
   return (
