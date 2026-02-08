@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { canReadTasks, canEditTasks, canDeleteTasks } from '@/lib/permissions'
 import { NoPermission } from '@/components/ui/NoPermission'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { getTaskChatReadAtAction } from '@/app/actions/chat-read'
 import TaskDetail from './TaskDetail'
 import TaskChat from './TaskChat'
 
@@ -93,6 +94,8 @@ export default async function TaskPage({
     : { data: [] }
   const membersList = (memberProfiles ?? []) as { id: string; display_name: string | null; email: string }[]
 
+  const readAt = await getTaskChatReadAtAction(company.id, task.id)
+
   // Get task attachments with metadata
   const { data: attachments } = await supabase
     .schema(APP_SCHEMA)
@@ -168,6 +171,7 @@ export default async function TaskPage({
             currentUserId={currentUserId}
             members={membersList}
             canEdit={canEdit}
+            readAt={readAt}
           />
         </div>
       </div>

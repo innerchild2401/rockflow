@@ -48,12 +48,14 @@ export default function TasksKanban({
   tasks,
   memberNames,
   canEdit,
+  taskNewCounts = {},
 }: {
   companyId: string
   slug: string
   tasks: Task[]
   memberNames: Record<string, string>
   canEdit: boolean
+  taskNewCounts?: Record<string, number>
 }) {
   const router = useRouter()
   const [draggedTask, setDraggedTask] = useState<string | null>(null)
@@ -135,9 +137,16 @@ export default function TasksKanban({
                         if (isDragging) e.preventDefault()
                       }}
                     >
-                      <h4 className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-                        {task.title}
-                      </h4>
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="min-w-0 flex-1 text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                          {task.title}
+                        </h4>
+                        {(taskNewCounts[task.id] ?? 0) > 0 && (
+                          <span className="flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-teal-600 px-1.5 text-xs font-medium text-white dark:bg-teal-500">
+                            {taskNewCounts[task.id]! > 99 ? '99+' : taskNewCounts[task.id]}
+                          </span>
+                        )}
+                      </div>
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         {urgency && (
                           <Badge className={urgency.color} size="sm">

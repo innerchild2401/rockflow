@@ -42,6 +42,7 @@ export default function TasksCalendar({
   memberNames,
   members,
   canEdit,
+  taskNewCounts = {},
 }: {
   companyId: string
   slug: string
@@ -49,6 +50,7 @@ export default function TasksCalendar({
   memberNames: Record<string, string>
   members: { id: string; display_name: string | null; email: string }[]
   canEdit: boolean
+  taskNewCounts?: Record<string, number>
 }) {
   const router = useRouter()
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -243,11 +245,16 @@ export default function TasksCalendar({
                         onDragStart={(e) => handleDragStart(e, task)}
                         onDragEnd={() => setDraggedTask(null)}
                         onClick={(e) => e.stopPropagation()}
-                        className={`block truncate rounded px-1.5 py-0.5 text-xs hover:opacity-80 ${urgency ? urgency.color : statusColor} ${
+                        className={`flex items-center gap-1 truncate rounded px-1.5 py-0.5 text-xs hover:opacity-80 ${urgency ? urgency.color : statusColor} ${
                           isDragging ? 'opacity-50' : ''
                         } ${canEdit ? 'cursor-move' : ''}`}
                       >
-                        {task.title}
+                        <span className="min-w-0 truncate">{task.title}</span>
+                        {(taskNewCounts[task.id] ?? 0) > 0 && (
+                          <span className="h-4 min-w-[16px] shrink-0 rounded-full bg-teal-600 px-1 text-[10px] font-medium leading-tight text-white dark:bg-teal-500">
+                            {taskNewCounts[task.id]! > 99 ? '99+' : taskNewCounts[task.id]}
+                          </span>
+                        )}
                       </Link>
                     )
                   })}
@@ -278,6 +285,11 @@ export default function TasksCalendar({
               >
                 <span className="font-medium text-zinc-900 dark:text-zinc-50">{task.title}</span>
                 <div className="flex items-center gap-2">
+                  {(taskNewCounts[task.id] ?? 0) > 0 && (
+                    <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-teal-600 px-1.5 text-xs font-medium text-white dark:bg-teal-500">
+                      {taskNewCounts[task.id]! > 99 ? '99+' : taskNewCounts[task.id]}
+                    </span>
+                  )}
                   <Badge className={STATUS_COLORS[task.status]} size="sm">
                     {task.status.replace('_', ' ')}
                   </Badge>

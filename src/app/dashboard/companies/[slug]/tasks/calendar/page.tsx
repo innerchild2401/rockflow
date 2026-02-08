@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { canReadTasks, canEditTasks } from '@/lib/permissions'
+import { getTaskNewMessageCountsAction } from '@/app/actions/chat-read'
 import { NoPermission } from '@/components/ui/NoPermission'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
@@ -67,6 +68,7 @@ export default async function TasksCalendarPage({
   }[]
   
   const membersList = (profiles ?? []) as { id: string; display_name: string | null; email: string }[]
+  const taskNewCounts = await getTaskNewMessageCountsAction(company.id, tasksList.map((t) => t.id))
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -85,6 +87,7 @@ export default async function TasksCalendarPage({
           memberNames={memberNames}
           members={membersList}
           canEdit={canEdit}
+          taskNewCounts={taskNewCounts}
         />
       </Card>
     </div>

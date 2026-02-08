@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { SendIcon } from '@/components/ui/SendIcon'
 import { getCompanyFeedAction, postCompanyFeedAction, type FeedPost } from '@/app/actions/company-feed'
+import { getCompanyFeedReadAtAction, setCompanyFeedReadAction } from '@/app/actions/chat-read'
 
 type OptimisticPost = FeedPost & { status: 'sending' | 'sent' }
 
@@ -12,6 +13,7 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
   const router = useRouter()
   const [posts, setPosts] = useState<FeedPost[]>([])
   const [optimisticPosts, setOptimisticPosts] = useState<OptimisticPost[]>([])
+  const [effectiveReadAt, setEffectiveReadAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [postError, setPostError] = useState<string | null>(null)
   const [body, setBody] = useState('')
@@ -20,15 +22,24 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
 
   async function loadFeed() {
     setLoading(true)
-    const r = await getCompanyFeedAction(companyId)
+    const [feedRes, readRes] = await Promise.all([
+      getCompanyFeedAction(companyId),
+      getCompanyFeedReadAtAction(companyId),
+    ])
     setLoading(false)
-    if (r.error) return
-    setPosts(r.posts)
-    setOptimisticPosts((prev) => prev.filter((o) => !r.posts.some((p) => p.id === o.id)))
+    if (feedRes.error) return
+    setPosts(feedRes.posts)
+    setEffectiveReadAt((prev) => prev ?? readRes ?? null)
+    setOptimisticPosts((prev) => prev.filter((o) => !feedRes.posts.some((p) => p.id === o.id)))
   }
 
   useEffect(() => {
     loadFeed()
+  }, [companyId])
+
+  useEffect(() => {
+    setCompanyFeedReadAction(companyId).then(() => {})
+    setEffectiveReadAt((prev) => prev ?? new Date().toISOString())
   }, [companyId])
 
   const displayPosts = [...posts]
@@ -36,6 +47,10 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
     if (!displayPosts.some((p) => p.id === o.id)) displayPosts.push(o)
   }
   displayPosts.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+
+  const readAtMs = effectiveReadAt ? new Date(effectiveReadAt).getTime() : 0
+  const seenPosts = displayPosts.filter((p) => new Date(p.created_at).getTime() <= readAtMs)
+  const newPosts = displayPosts.filter((p) => new Date(p.created_at).getTime() > readAtMs)
 
   useEffect(() => {
     if (displayPosts.length > 0 && listRef.current) {
@@ -106,7 +121,66 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
         )}
         {!loading && displayPosts.length > 0 && (
           <ul className="space-y-4">
-            {displayPosts.map((post) => {
+            {seenPosts.map((post) => {
+              const isOwn = post.user_id === currentUserId
+              const status = 'status' in post ? (post as OptimisticPost).status : null
+              return (
+                <li
+                  key={post.id}
+                  className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-stone-200 text-xs font-medium text-stone-600 dark:bg-stone-600 dark:text-stone-300">
+                    {post.author_name.charAt(0).toUpperCase()}
+                  </div>
+                  <div
+                    className={`min-w-0 max-w-[85%] rounded-lg px-3 py-2 ${
+                      isOwn
+                        ? 'bg-teal-600 text-white dark:bg-teal-600/90'
+                        : 'bg-stone-100 text-stone-800 dark:bg-stone-700 dark:text-stone-200'
+                    }`}
+                  >
+                    <div className={`flex flex-wrap items-baseline gap-2 ${isOwn ? 'flex-row-reverse justify-end' : ''}`}>
+                      <span className="text-sm font-medium">
+                        {post.author_name}
+                      </span>
+                      <span className={`text-xs ${isOwn ? 'text-teal-100' : 'text-stone-600 dark:text-stone-300'}`}>
+                        {new Date(post.created_at).toLocaleString()}
+                      </span>
+                      {isOwn && status && (
+                        <span className="ml-0.5 inline-flex" aria-label={status === 'sending' ? 'Sending' : 'Sent'}>
+                          {status === 'sending' ? (
+                            <svg className="h-3.5 w-3.5 text-white/80" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                            </svg>
+                          ) : (
+                            <span className="flex -space-x-1">
+                              <svg className="h-3.5 w-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                              </svg>
+                              <svg className="h-3.5 w-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                              </svg>
+                            </span>
+                          )}
+                        </span>
+                      )}
+                    </div>
+                    <p className={`mt-0.5 whitespace-pre-wrap text-sm ${isOwn ? 'text-right text-white' : ''}`}>
+                      {post.body}
+                    </p>
+                  </div>
+                </li>
+              )
+            })}
+            {newPosts.length > 0 && (
+              <li className="flex items-center gap-2 py-2">
+                <span className="text-xs font-medium uppercase tracking-wide text-teal-600 dark:text-teal-400">
+                  New messages
+                </span>
+                <div className="h-px flex-1 bg-teal-200 dark:bg-teal-800" />
+              </li>
+            )}
+            {newPosts.map((post) => {
               const isOwn = post.user_id === currentUserId
               const status = 'status' in post ? (post as OptimisticPost).status : null
               return (

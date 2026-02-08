@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createTaskCommentAction } from '@/app/actions/tasks'
 import { attachDocumentToTaskAction, detachDocumentFromTaskAction } from '@/app/actions/task-collaboration'
+import { setTaskChatReadAction } from '@/app/actions/chat-read'
 import { getMentionSuggestions } from '@/lib/parse-mentions'
 import { Badge } from '@/components/ui/Badge'
 import { SendIcon } from '@/components/ui/SendIcon'
@@ -72,6 +73,7 @@ export default function TaskChat({
   availableDocuments,
   currentUserId,
   canEdit,
+  readAt,
 }: {
   companyId: string
   taskId: string
@@ -87,8 +89,13 @@ export default function TaskChat({
   availableDocuments: Document[]
   currentUserId: string | null
   canEdit: boolean
+  readAt: string | null
 }) {
   const router = useRouter()
+  const [effectiveReadAt, setEffectiveReadAt] = useState<string | null>(readAt)
+  useEffect(() => {
+    setEffectiveReadAt((prev) => (prev === null && readAt != null ? readAt : prev))
+  }, [readAt])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [message, setMessage] = useState('')
   const [replyTo, setReplyTo] = useState<string | null>(null)
@@ -131,6 +138,12 @@ export default function TaskChat({
 
   // Enable real-time updates
   useTaskRealtime(taskId, true)
+
+  // Mark chat as read when opened
+  useEffect(() => {
+    setTaskChatReadAction(companyId, taskId).then(() => {})
+    setEffectiveReadAt((prev) => prev ?? new Date().toISOString())
+  }, [companyId, taskId])
 
   // Flatten comments (root + replies) into one chronological list so replies appear at bottom (WhatsApp-style)
   type CommentWithQuote = { comment: CommentNode; parentQuote?: { author: string; body: string } }
@@ -200,6 +213,15 @@ export default function TaskChat({
   }
   
   const activities = filteredActivities
+
+  const readAtMs = effectiveReadAt ? new Date(effectiveReadAt).getTime() : 0
+  const seenActivities: typeof activities = []
+  const newActivities: typeof activities = []
+  for (const a of activities) {
+    const t = a.type === 'attachment' ? new Date(a.data.attached_at || 0).getTime() : new Date(a.data.created_at).getTime()
+    if (t <= readAtMs) seenActivities.push(a)
+    else newActivities.push(a)
+  }
 
   const urgency = getUrgency(taskDueDate)
   const mentionSuggestions = mentionQuery
@@ -452,7 +474,75 @@ export default function TaskChat({
             </div>
           )}
           <div className="space-y-4">
-          {activities.map((activity, idx) => {
+          {seenActivities.map((activity) => {
+            if (activity.type === 'attachment') {
+              const doc = activity.data
+              return (
+                <div key={`attach-${doc.id}`} className="flex items-start gap-3 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-medium text-stone-600 dark:text-stone-400">
+                        {doc.attached_by || 'Someone'}
+                      </span>
+                      <span className="text-xs text-stone-500 dark:text-stone-400">attached</span>
+                      <Link
+                        href={`/dashboard/companies/${slug}/documents/${doc.id}?returnTo=/dashboard/companies/${slug}/tasks/${taskId}`}
+                        className="text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
+                      >
+                        {doc.file_name || doc.title}
+                      </Link>
+                    </div>
+                    {doc.attached_at && (
+                      <span className="mt-1 text-xs text-stone-600 dark:text-stone-400">
+                        {new Date(doc.attached_at).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            } else {
+              const commentActivity = activity as {
+                type: 'comment'
+                data: CommentNode
+                parentQuote?: { author: string; body: string }
+                sendStatus?: 'sending' | 'sent'
+              }
+              return (
+                <CommentWithReactions
+                  key={commentActivity.data.id}
+                  comment={commentActivity.data}
+                  depth={0}
+                  parentQuote={commentActivity.parentQuote}
+                  showReplies={false}
+                  sendStatus={commentActivity.sendStatus}
+                  companyId={companyId}
+                  taskId={taskId}
+                  currentUserId={currentUserId}
+                  canEdit={canEdit}
+                  onReply={setReplyTo}
+                  replyTo={replyTo}
+                  replyBody={replyBody}
+                  setReplyBody={setReplyBody}
+                  onSubmitReply={onSubmitReply}
+                  loading={loading}
+                />
+              )
+            }
+          })}
+          {newActivities.length > 0 && (
+            <div className="flex items-center gap-2 py-2">
+              <span className="text-xs font-medium uppercase tracking-wide text-teal-600 dark:text-teal-400">
+                New messages
+              </span>
+              <div className="h-px flex-1 bg-teal-200 dark:bg-teal-800" />
+            </div>
+          )}
+          {newActivities.map((activity) => {
             if (activity.type === 'attachment') {
               const doc = activity.data
               return (

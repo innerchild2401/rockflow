@@ -14,6 +14,7 @@ export default function TasksViewSwitcher({
   memberNames,
   members,
   canEdit,
+  taskNewCounts,
 }: {
   companyId: string
   slug: string
@@ -28,6 +29,7 @@ export default function TasksViewSwitcher({
   memberNames: Record<string, string>
   members: { id: string; display_name: string | null; email: string }[]
   canEdit: boolean
+  taskNewCounts: Record<string, number>
 }) {
   const [view, setView] = useState<View>('list')
 
@@ -51,11 +53,11 @@ export default function TasksViewSwitcher({
           ))}
         </div>
       </div>
-      {view === 'list' && <TasksList slug={slug} tasks={tasks} memberNames={memberNames} />}
+      {view === 'list' && <TasksList slug={slug} tasks={tasks} memberNames={memberNames} taskNewCounts={taskNewCounts} />}
       {view === 'kanban' && (
-        <TasksKanban companyId={companyId} slug={slug} tasks={tasks} memberNames={memberNames} canEdit={canEdit} />
+        <TasksKanban companyId={companyId} slug={slug} tasks={tasks} memberNames={memberNames} canEdit={canEdit} taskNewCounts={taskNewCounts} />
       )}
-      {view === 'search' && <TasksSearch slug={slug} tasks={tasks} memberNames={memberNames} members={members} />}
+      {view === 'search' && <TasksSearch slug={slug} tasks={tasks} memberNames={memberNames} members={members} taskNewCounts={taskNewCounts} />}
     </>
   )
 }

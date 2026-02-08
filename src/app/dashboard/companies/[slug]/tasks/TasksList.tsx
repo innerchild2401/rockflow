@@ -33,6 +33,7 @@ export default function TasksList({
   slug,
   tasks,
   memberNames,
+  taskNewCounts = {},
 }: {
   slug: string
   tasks: {
@@ -44,6 +45,7 @@ export default function TasksList({
     updated_at: string
   }[]
   memberNames: Record<string, string>
+  taskNewCounts?: Record<string, number>
 }) {
   const formatDate = (s: string) => new Date(s).toLocaleDateString()
   const byStatus = (status: string) => tasks.filter((t) => t.status === status)
@@ -70,6 +72,11 @@ export default function TasksList({
                     >
                       <span className="min-w-0 flex-1 font-medium text-zinc-900 dark:text-zinc-50">{t.title}</span>
                       <div className="flex shrink-0 items-center gap-2">
+                        {(taskNewCounts[t.id] ?? 0) > 0 && (
+                          <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-teal-600 px-1.5 text-xs font-medium text-white dark:bg-teal-500">
+                            {taskNewCounts[t.id]! > 99 ? '99+' : taskNewCounts[t.id]}
+                          </span>
+                        )}
                         {urgency && (
                           <Badge className={urgency.color} size="sm">
                             {urgency.label}

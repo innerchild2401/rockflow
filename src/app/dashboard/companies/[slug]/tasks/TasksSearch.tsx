@@ -37,11 +37,13 @@ export default function TasksSearch({
   tasks,
   memberNames,
   members,
+  taskNewCounts = {},
 }: {
   slug: string
   tasks: Task[]
   memberNames: Record<string, string>
   members: { id: string; display_name: string | null; email: string }[]
+  taskNewCounts?: Record<string, number>
 }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -185,6 +187,11 @@ export default function TasksSearch({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-zinc-900 dark:text-zinc-50">{task.title}</span>
+                    {(taskNewCounts[task.id] ?? 0) > 0 && (
+                      <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-teal-600 px-1.5 text-xs font-medium text-white dark:bg-teal-500">
+                        {taskNewCounts[task.id]! > 99 ? '99+' : taskNewCounts[task.id]}
+                      </span>
+                    )}
                     <Badge className={STATUS_COLORS[task.status]} size="sm">
                       {STATUS_LABELS[task.status]}
                     </Badge>
