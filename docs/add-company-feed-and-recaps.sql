@@ -17,6 +17,8 @@ CREATE INDEX IF NOT EXISTS idx_company_feed_created ON app.company_feed(company_
 
 ALTER TABLE app.company_feed ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS company_feed_select ON app.company_feed;
+DROP POLICY IF EXISTS company_feed_insert ON app.company_feed;
 CREATE POLICY company_feed_select ON app.company_feed
   FOR SELECT USING (app.is_company_member(company_id));
 CREATE POLICY company_feed_insert ON app.company_feed
@@ -35,6 +37,9 @@ CREATE INDEX IF NOT EXISTS idx_company_recaps_period ON app.company_recaps(compa
 
 ALTER TABLE app.company_recaps ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS company_recaps_select ON app.company_recaps;
+DROP POLICY IF EXISTS company_recaps_insert ON app.company_recaps;
+DROP POLICY IF EXISTS company_recaps_update ON app.company_recaps;
 CREATE POLICY company_recaps_select ON app.company_recaps
   FOR SELECT USING (app.is_company_member(company_id));
 CREATE POLICY company_recaps_insert ON app.company_recaps

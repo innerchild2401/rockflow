@@ -12,48 +12,50 @@ function getPeriodStart(): string {
   return d.toISOString()
 }
 
-/** Fetch audit events for company in the past hour (since period_start). */
+/** Fetch audit events for company in the past hour (since period_start). Returns [] if table missing or error. */
 async function getAuditEvents(
   supabase: Awaited<ReturnType<typeof createClient>>,
   companyId: string,
   periodStart: string
-) {
-  const { data: logs } = await supabase
-    .schema(APP_SCHEMA)
-    .from('audit_logs')
-    .select('id, user_id, action, entity_type, entity_id, old_value, new_value, created_at')
-    .eq('company_id', companyId)
-    .gte('created_at', periodStart)
-    .order('created_at', { ascending: true })
-
-  if (!logs?.length) return []
-  const userIds = [...new Set(logs.map((l) => l.user_id).filter(Boolean) as string[])]
-  const { data: profiles } = userIds.length
-    ? await supabase.schema(APP_SCHEMA).from('profiles').select('id, display_name, email').in('id', userIds)
-    : { data: [] }
-  const nameBy: Record<string, string> = {}
-  for (const p of profiles ?? []) {
-    nameBy[p.id] = p.display_name || p.email
-  }
-
-  const events: string[] = []
-  for (const row of logs) {
-    const who = row.user_id ? (nameBy[row.user_id] ?? 'Someone') : 'Someone'
-    const ov = row.old_value as { title?: string; status?: string } | null
-    const nv = row.new_value as { title?: string; status?: string; uploaded?: boolean; file_name?: string } | null
-    const title = nv?.title ?? ov?.title
-    if (row.entity_type === 'task') {
-      if (row.action === 'created') events.push(`${who} created task "${title ?? 'Untitled'}"`)
-      else if (row.action === 'updated' && nv?.status === 'done') events.push(`${who} completed task "${title ?? 'Untitled'}"`)
-      else if (row.action === 'deleted') events.push(`${who} deleted task "${ov?.title ?? 'Untitled'}"`)
-      else if (row.action === 'updated') events.push(`${who} updated task "${title ?? 'Untitled'}"`)
-    } else if (row.entity_type === 'document') {
-      if (row.action === 'created' && nv?.uploaded) events.push(`${who} uploaded document "${nv?.file_name ?? title ?? 'Untitled'}"`)
-      else if (row.action === 'created') events.push(`${who} created document "${title ?? 'Untitled'}"`)
-      else if (row.action === 'deleted') events.push(`${who} deleted document "${ov?.title ?? 'Untitled'}"`)
+): Promise<string[]> {
+  try {
+    const { data: logs, error } = await supabase
+      .schema(APP_SCHEMA)
+      .from('audit_logs')
+      .select('id, user_id, action, entity_type, entity_id, old_value, new_value, created_at')
+      .eq('company_id', companyId)
+      .gte('created_at', periodStart)
+      .order('created_at', { ascending: true })
+    if (error || !logs?.length) return []
+    const userIds = [...new Set(logs.map((l) => l.user_id).filter(Boolean) as string[])]
+    const { data: profiles } = userIds.length
+      ? await supabase.schema(APP_SCHEMA).from('profiles').select('id, display_name, email').in('id', userIds)
+      : { data: [] }
+    const nameBy: Record<string, string> = {}
+    for (const p of profiles ?? []) {
+      nameBy[p.id] = p.display_name || p.email
     }
+    const events: string[] = []
+    for (const row of logs) {
+      const who = row.user_id ? (nameBy[row.user_id] ?? 'Someone') : 'Someone'
+      const ov = row.old_value as { title?: string; status?: string } | null
+      const nv = row.new_value as { title?: string; status?: string; uploaded?: boolean; file_name?: string } | null
+      const title = nv?.title ?? ov?.title
+      if (row.entity_type === 'task') {
+        if (row.action === 'created') events.push(`${who} created task "${title ?? 'Untitled'}"`)
+        else if (row.action === 'updated' && nv?.status === 'done') events.push(`${who} completed task "${title ?? 'Untitled'}"`)
+        else if (row.action === 'deleted') events.push(`${who} deleted task "${ov?.title ?? 'Untitled'}"`)
+        else if (row.action === 'updated') events.push(`${who} updated task "${title ?? 'Untitled'}"`)
+      } else if (row.entity_type === 'document') {
+        if (row.action === 'created' && nv?.uploaded) events.push(`${who} uploaded document "${nv?.file_name ?? title ?? 'Untitled'}"`)
+        else if (row.action === 'created') events.push(`${who} created document "${title ?? 'Untitled'}"`)
+        else if (row.action === 'deleted') events.push(`${who} deleted document "${ov?.title ?? 'Untitled'}"`)
+      }
+    }
+    return events
+  } catch {
+    return []
   }
-  return events
 }
 
 /** Fetch mentions of current user in task comments in the past hour. */
@@ -163,15 +165,24 @@ export async function getCompanyRecapAction(companyId: string): Promise<RecapRes
       { role: 'user', content: userPrompt },
     ])
   } catch (err) {
-    return { error: err instanceof Error ? err.message : 'Failed to generate recap.', content: null, periodStart: null }
+    const msg = err instanceof Error ? err.message : 'Failed to generate recap.'
+    const friendly =
+      msg.includes('OPENAI_API_KEY') || msg.includes('API key')
+        ? 'Recap requires OPENAI_API_KEY to be set in environment.'
+        : msg
+    return { error: friendly, content: null, periodStart: null }
   }
 
   if (!content.trim()) content = 'No summary could be generated for the past hour.'
 
-  await supabase.schema(APP_SCHEMA).from('company_recaps').upsert(
+  const { error: upsertError } = await supabase.schema(APP_SCHEMA).from('company_recaps').upsert(
     { company_id: companyId, period_start: periodStart, content: content.trim() },
     { onConflict: 'company_id,period_start' }
   )
+  // If upsert fails (e.g. table missing), still return the generated content
+  if (upsertError && process.env.NODE_ENV === 'development') {
+    console.warn('[company-recap] cache upsert failed:', upsertError.message)
+  }
 
   return { error: null, content: content.trim(), periodStart }
 }
