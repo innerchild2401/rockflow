@@ -136,8 +136,8 @@ export default function TaskChat({
     setOptimisticComments((prev) => prev.filter((o) => !serverCommentIds.has(o.comment.id)))
   }, [comments])
 
-  // Enable real-time updates
-  useTaskRealtime(taskId, true)
+  // Enable real-time updates (skip refresh for our own inserts so chat stays fluid)
+  useTaskRealtime(taskId, true, currentUserId)
 
   // Mark chat as read when opened
   useEffect(() => {
@@ -302,7 +302,7 @@ export default function TaskChat({
         )
       )
       addToast('Comment posted', 'success')
-      router.refresh()
+      // Don't router.refresh() here – message is already shown; realtime will sync others' messages
     }
   }
 
@@ -346,7 +346,7 @@ export default function TaskChat({
         )
       )
       addToast('Reply posted', 'success')
-      router.refresh()
+      // Don't router.refresh() here – reply is already shown; realtime will sync others'
     }
   }
 

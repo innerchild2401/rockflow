@@ -1,16 +1,19 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, startTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 const APP_SCHEMA = 'app'
 
+type RealtimePayload = { new?: { user_id?: string }; old?: unknown }
+
 /**
  * Hook to subscribe to real-time updates for a task (comments and attachments).
+ * Skips refresh for the current user's own comment inserts so the chat stays fluid.
  */
-export function useTaskRealtime(taskId: string, enabled = true) {
+export function useTaskRealtime(taskId: string, enabled = true, currentUserId: string | null = null) {
   const router = useRouter()
   const channelRef = useRef<RealtimeChannel | null>(null)
 
@@ -28,9 +31,16 @@ export function useTaskRealtime(taskId: string, enabled = true) {
           table: 'task_comments',
           filter: `task_id=eq.${taskId}`,
         },
-        () => {
-          // Refresh the page to get latest comments
-          router.refresh()
+        (payload: RealtimePayload) => {
+          // Don't refresh for our own insert – message is already shown optimistically
+          if (
+            payload.new?.user_id &&
+            currentUserId &&
+            payload.new.user_id === currentUserId
+          ) {
+            return
+          }
+          startTransition(() => router.refresh())
         }
       )
       .on(
@@ -42,8 +52,7 @@ export function useTaskRealtime(taskId: string, enabled = true) {
           filter: `task_id=eq.${taskId}`,
         },
         () => {
-          // Refresh the page to get latest attachments
-          router.refresh()
+          startTransition(() => router.refresh())
         }
       )
       .subscribe()
@@ -54,5 +63,5 @@ export function useTaskRealtime(taskId: string, enabled = true) {
       channel.unsubscribe()
       channelRef.current = null
     }
-  }, [taskId, enabled, router])
+  }, [taskId, enabled, currentUserId, router])
 }
