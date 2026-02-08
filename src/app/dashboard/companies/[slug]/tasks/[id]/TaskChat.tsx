@@ -384,12 +384,13 @@ export default function TaskChat({
   }
 
 
+  /* Same pattern as CompanyFeed/ChatClient: fill parent, only list scrolls, input sticky */
   const Wrapper = isChatOnly ? Card : 'div'
   const wrapperProps = isChatOnly
     ? { padding: 'none' as const, className: 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden' }
     : {
         className:
-          'flex min-h-[55dvh] flex-col rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 sm:min-h-[60dvh] sm:h-[calc(100vh-12rem)] lg:h-[calc(100dvh-10rem)]',
+          'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900',
       }
 
   return (
@@ -454,7 +455,7 @@ export default function TaskChat({
       )}
 
       {/* Only message list scrolls; input stays sticky (overflow-hidden so only inner overflow-y-auto scrolls) */}
-      <div className={`flex min-w-0 flex-1 flex-col overflow-hidden ${isChatOnly ? 'min-h-0' : 'min-h-[40dvh] sm:min-h-0'}`}>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {/* Activity Feed Controls (hidden in chatOnly to match company feed) */}
         {!isChatOnly && (
           <div className="shrink-0 border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">

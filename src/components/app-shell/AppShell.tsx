@@ -29,7 +29,7 @@ export function AppShell({
   const currentCompany = companies.find((c) => c.slug === currentSlug)
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-[var(--background)]">
+    <div className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[var(--background)]">
       <TopBar
         profile={profile}
         currentCompany={currentCompany ?? null}

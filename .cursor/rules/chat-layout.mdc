@@ -15,6 +15,7 @@ globs:
 - **Text input must stay sticky at the bottom.** Use `shrink-0` on the input/form container so it does not shrink and remains anchored at the bottom of the chat panel.
 - **Container:** The chat panel (card or wrapper) must be `flex flex-col overflow-hidden` (and `min-h-0` / `flex-1` where it lives in a flex parent) so that only the inner scroll div scrolls, not the whole panel.
 - **Desktop grids:** When chat is in a two-column layout (e.g. Recap|Feed or Details|Chat), use `grid-rows-1`, `overflow-hidden`, and `h-full` on the grid so the row has fixed height and only the chat list scrolls.
-- **Page roots:** Any page that hosts a chat (company page, task page, chat page) must have `overflow-hidden` and `flex-1 min-h-0` on its root so the document doesn’t scroll; the chat area gets a bounded height from the shell.
+- **AppShell (dashboard):** The shell wrapper must be `h-[100dvh] max-h-[100dvh] overflow-hidden` so it cannot grow with content; otherwise the document scrolls no matter what the pages do.
+- **Page roots:** Any page that hosts a chat (company page, task page, chat page) must have `overflow-hidden` and `flex-1 min-h-0` on its root so the chat area gets a bounded height from the shell.
 - **Mobile tab content:** When chat is inside tabs (e.g. Feed tab, Chat tab), the tab content wrapper must be `flex-1 min-h-0 overflow-hidden` and the chat wrapper inside it `flex-1 min-h-0 overflow-hidden` so only the list scrolls (no fixed height like `h-[calc(100dvh-12rem)]` that can exceed the viewport).
 - Applies to **CompanyFeed** (social feed), **TaskChat** (task chat), **ChatClient** (Knowledge Base chat), and their page/layout wrappers, on both **mobile** and **desktop**.
