@@ -6,6 +6,8 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { getTaskChatReadAtAction } from '@/app/actions/chat-read'
 import TaskDetail from './TaskDetail'
 import TaskChat from './TaskChat'
+import AttachmentsPanel from './AttachmentsPanel'
+import TaskPageLayout from './TaskPageLayout'
 
 const APP_SCHEMA = 'app'
 
@@ -137,43 +139,54 @@ export default async function TaskPage({
     .order('updated_at', { ascending: false })
     .limit(100)
 
+  const taskChatProps = {
+    companyId: company.id,
+    taskId: task.id,
+    slug,
+    taskTitle: task.title,
+    taskStatus: task.status,
+    taskDueDate: task.due_date,
+    taskAssignedTo: task.assigned_to,
+    taskAssigneeName: assigneeName,
+    comments: commentTree,
+    attachments: attachmentsWithMeta as { id: string; title: string; file_name: string | null; attached_by?: string; attached_at?: string | null }[],
+    availableDocuments: (allDocuments ?? []) as { id: string; title: string; file_name: string | null }[],
+    currentUserId: currentUserId,
+    members: membersList,
+    canEdit: canEdit,
+    readAt,
+  }
+
   return (
     <div className="mx-auto max-w-7xl space-y-4 px-4 sm:space-y-6 sm:px-6">
       <PageHeader backHref={`/dashboard/companies/${slug}/tasks`} backLabel="Tasks" title="Task" />
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* Sidebar - Task Info & Quick Actions */}
-        <div className="min-w-0 lg:col-span-1">
-          <TaskDetail
-            companyId={company.id}
-            taskId={task.id}
-            slug={slug}
-            initial={{ title: task.title, description: task.description ?? '', status: task.status, due_date: task.due_date ?? '', assigned_to: task.assigned_to ?? '' }}
-            members={membersList}
-            canEdit={canEdit}
-            canDelete={canDelete}
-            availableDocuments={allDocuments ?? []}
-          />
-        </div>
-        {/* Main - Chat Interface; min height on mobile so chat is readable */}
-        <div className="min-h-[55dvh] min-w-0 sm:min-h-[60dvh] lg:col-span-2">
-          <TaskChat
-            companyId={company.id}
-            taskId={task.id}
-            slug={slug}
-            taskTitle={task.title}
-            taskStatus={task.status}
-            taskDueDate={task.due_date}
-            taskAssignedTo={task.assigned_to}
-            taskAssigneeName={assigneeName}
-            comments={commentTree}
-            attachments={attachmentsWithMeta as { id: string; title: string; file_name: string | null; attached_by?: string; attached_at?: string | null }[]}
-            availableDocuments={(allDocuments ?? []) as { id: string; title: string; file_name: string | null }[]}
-            currentUserId={currentUserId}
-            members={membersList}
-            canEdit={canEdit}
-            readAt={readAt}
-          />
-        </div>
+      <div className="flex flex-col gap-4 lg:min-h-0 lg:flex-1">
+        <TaskPageLayout
+          detailsSlot={
+            <TaskDetail
+              companyId={company.id}
+              taskId={task.id}
+              slug={slug}
+              initial={{ title: task.title, description: task.description ?? '', status: task.status, due_date: task.due_date ?? '', assigned_to: task.assigned_to ?? '' }}
+              members={membersList}
+              canEdit={canEdit}
+              canDelete={canDelete}
+              availableDocuments={allDocuments ?? []}
+            />
+          }
+          attachmentsSlot={
+            <AttachmentsPanel
+              companyId={company.id}
+              taskId={task.id}
+              slug={slug}
+              attachments={attachmentsWithMeta as { id: string; title: string; file_name: string | null; attached_by?: string; attached_at?: string | null }[]}
+              canEdit={canEdit}
+              availableDocuments={(allDocuments ?? []) as { id: string; title: string; file_name: string | null }[]}
+            />
+          }
+          chatTabSlot={<TaskChat {...taskChatProps} variant="chatOnly" />}
+          chatFullSlot={<TaskChat {...taskChatProps} />}
+        />
       </div>
     </div>
   )

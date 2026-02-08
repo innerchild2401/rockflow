@@ -74,6 +74,7 @@ export default function TaskChat({
   currentUserId,
   canEdit,
   readAt,
+  variant,
 }: {
   companyId: string
   taskId: string
@@ -90,7 +91,9 @@ export default function TaskChat({
   currentUserId: string | null
   canEdit: boolean
   readAt: string | null
+  variant?: 'full' | 'chatOnly'
 }) {
+  const isChatOnly = variant === 'chatOnly'
   const router = useRouter()
   const [effectiveReadAt, setEffectiveReadAt] = useState<string | null>(readAt)
   useEffect(() => {
@@ -381,60 +384,70 @@ export default function TaskChat({
 
 
   return (
-    <div className="flex min-h-[55dvh] flex-col rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 sm:min-h-[60dvh] sm:h-[calc(100vh-12rem)] lg:h-[calc(100dvh-10rem)]">
-      {/* Header */}
-      <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate text-lg font-semibold text-zinc-900 dark:text-zinc-50 sm:text-xl">{taskTitle}</h1>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <Badge className={STATUS_COLORS[taskStatus]}>{STATUS_LABELS[taskStatus]}</Badge>
-              {urgency && <Badge className={urgency.color}>{urgency.label}</Badge>}
-              {taskDueDate && (
-                <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Due {new Date(taskDueDate).toLocaleDateString()}
-                </span>
-              )}
-              {taskAssigneeName && (
-                <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400" size="sm">
-                  {taskAssigneeName}
-                </Badge>
-              )}
+    <div
+      className={
+        isChatOnly
+          ? 'flex min-h-0 min-w-0 flex-1 flex-col rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900'
+          : 'flex min-h-[55dvh] flex-col rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 sm:min-h-[60dvh] sm:h-[calc(100vh-12rem)] lg:h-[calc(100dvh-10rem)]'
+      }
+    >
+      {!isChatOnly && (
+        <>
+          {/* Header */}
+          <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0 flex-1">
+                <h1 className="truncate text-lg font-semibold text-zinc-900 dark:text-zinc-50 sm:text-xl">{taskTitle}</h1>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <Badge className={STATUS_COLORS[taskStatus]}>{STATUS_LABELS[taskStatus]}</Badge>
+                  {urgency && <Badge className={urgency.color}>{urgency.label}</Badge>}
+                  {taskDueDate && (
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                      Due {new Date(taskDueDate).toLocaleDateString()}
+                    </span>
+                  )}
+                  {taskAssigneeName && (
+                    <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400" size="sm">
+                      {taskAssigneeName}
+                    </Badge>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Attachments */}
-      {attachments.length > 0 && (
-        <div className="border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Attachments:</span>
-            {attachments.map((doc) => (
-              <div key={doc.id} className="flex items-center gap-1 rounded bg-zinc-100 px-2 py-1 text-xs dark:bg-zinc-800">
-                <Link
-                  href={`/dashboard/companies/${slug}/documents/${doc.id}?returnTo=/dashboard/companies/${slug}/tasks/${taskId}`}
-                  className="text-zinc-700 hover:underline dark:text-zinc-300"
-                >
-                  {doc.file_name || doc.title}
-                </Link>
-                {doc.attached_by && (
-                  <span className="text-zinc-500 dark:text-zinc-400">by {doc.attached_by}</span>
-                )}
-                {canEdit && (
-                  <button
-                    type="button"
-                    onClick={() => onDetachDocument(doc.id)}
-                    className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-400"
-                    aria-label="Remove"
-                  >
-                    ×
-                  </button>
-                )}
+          {/* Attachments */}
+          {attachments.length > 0 && (
+            <div className="border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Attachments:</span>
+                {attachments.map((doc) => (
+                  <div key={doc.id} className="flex items-center gap-1 rounded bg-zinc-100 px-2 py-1 text-xs dark:bg-zinc-800">
+                    <Link
+                      href={`/dashboard/companies/${slug}/documents/${doc.id}?returnTo=/dashboard/companies/${slug}/tasks/${taskId}`}
+                      className="text-zinc-700 hover:underline dark:text-zinc-300"
+                    >
+                      {doc.file_name || doc.title}
+                    </Link>
+                    {doc.attached_by && (
+                      <span className="text-zinc-500 dark:text-zinc-400">by {doc.attached_by}</span>
+                    )}
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => onDetachDocument(doc.id)}
+                        className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-400"
+                        aria-label="Remove"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Messages/Activity Feed - min height on mobile so chat is readable */}
