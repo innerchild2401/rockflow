@@ -104,14 +104,20 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
   }
 
   return (
-    <Card padding="none" className="flex min-h-[50dvh] flex-col overflow-hidden sm:min-h-[280px]">
+    <Card
+      padding="none"
+      className="flex min-h-[50dvh] flex-col overflow-hidden sm:min-h-[280px] sm:h-[55vh] sm:max-h-[calc(100vh-10rem)]"
+    >
       <div className="shrink-0 border-b border-zinc-200 px-4 py-3 dark:border-zinc-700 sm:px-6 sm:py-4">
         <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Team feed</h2>
         <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
           Share what you&apos;re working on, ask for help, or post updates.
         </p>
       </div>
-      <div ref={listRef} className="min-h-[200px] flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4">
+      <div
+        ref={listRef}
+        className="min-h-[200px] min-w-0 flex-1 overflow-y-auto px-4 py-3 sm:min-h-0 sm:px-6 sm:py-4"
+      >
         {loading && (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
@@ -247,7 +253,7 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
       </div>
       <form
         onSubmit={handleSubmit}
-        className="shrink-0 border-t border-zinc-200 px-4 py-3 dark:border-zinc-700 sm:px-6"
+        className="shrink-0 border-t border-zinc-200 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900 sm:px-6"
       >
         {postError && (
           <p className="mb-2 text-sm text-red-600 dark:text-red-400">{postError}</p>
