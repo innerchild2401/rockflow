@@ -126,12 +126,14 @@ export default function CompanyFeed({
           : 'flex min-h-[50dvh] flex-col overflow-hidden sm:min-h-[280px] sm:h-[55vh] sm:max-h-[calc(100vh-10rem)]'
       }
     >
+      {/* Header fixed; only list below scrolls; input sticky at bottom */}
       <div className="shrink-0 border-b border-zinc-200 px-4 py-3 dark:border-zinc-700 sm:px-6 sm:py-4">
         <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Team feed</h2>
         <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
           Share what you&apos;re working on, ask for help, or post updates.
         </p>
       </div>
+      {/* Only this list scrolls; input stays sticky at bottom */}
       <div
         ref={listRef}
         className={`min-w-0 flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4 ${embeddedInTab ? 'min-h-0' : 'min-h-[200px] sm:min-h-0'}`}

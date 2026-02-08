@@ -453,8 +453,8 @@ export default function TaskChat({
         </>
       )}
 
-      {/* Messages/Activity Feed - min-h-0 when chatOnly so only contents scroll, input stays sticky */}
-      <div className={`flex min-w-0 flex-1 flex-col ${isChatOnly ? 'min-h-0' : 'min-h-[40dvh] sm:min-h-0'}`}>
+      {/* Only message list scrolls; input stays sticky (overflow-hidden so only inner overflow-y-auto scrolls) */}
+      <div className={`flex min-w-0 flex-1 flex-col overflow-hidden ${isChatOnly ? 'min-h-0' : 'min-h-[40dvh] sm:min-h-0'}`}>
         {/* Activity Feed Controls (hidden in chatOnly to match company feed) */}
         {!isChatOnly && (
           <div className="shrink-0 border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
@@ -485,6 +485,7 @@ export default function TaskChat({
             </div>
           </div>
         )}
+        {/* Only this area scrolls; header/filters above and input below stay fixed */}
         <div className={`min-w-0 flex-1 overflow-y-auto text-base sm:text-sm ${isChatOnly ? 'min-h-0 px-4 py-3 sm:px-6 sm:py-4' : 'px-4 py-4 min-h-[200px] sm:min-h-0'}`}>
           <div className="space-y-4">
           {seenActivities.map((activity) => {
