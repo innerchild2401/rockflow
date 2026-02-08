@@ -57,7 +57,8 @@ export default function TaskPageLayout({
             </div>
           )}
           {activeTab === 'chat' && (
-            <div className="flex h-full min-h-0 flex-col">
+            /* Fixed height on mobile so chat area is bounded and input sticks to bottom (dashboard main doesn't constrain height) */
+            <div className="flex h-[calc(100dvh-12rem)] min-h-[280px] min-w-0 flex-col overflow-hidden sm:h-[calc(100dvh-11rem)]">
               {chatTabSlot}
             </div>
           )}
