@@ -464,10 +464,10 @@ export default function TaskChat({
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                      <span className="text-xs font-medium text-stone-600 dark:text-stone-400">
                         {doc.attached_by || 'Someone'}
                       </span>
-                      <span className="text-xs text-zinc-400 dark:text-zinc-500">attached</span>
+                      <span className="text-xs text-stone-500 dark:text-stone-400">attached</span>
                       <Link
                         href={`/dashboard/companies/${slug}/documents/${doc.id}?returnTo=/dashboard/companies/${slug}/tasks/${taskId}`}
                         className="text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
@@ -476,7 +476,7 @@ export default function TaskChat({
                       </Link>
                     </div>
                     {doc.attached_at && (
-                      <span className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+                      <span className="mt-1 text-xs text-stone-600 dark:text-stone-400">
                         {new Date(doc.attached_at).toLocaleString()}
                       </span>
                     )}

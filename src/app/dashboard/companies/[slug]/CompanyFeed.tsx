@@ -128,7 +128,7 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
                       <span className="text-sm font-medium">
                         {post.author_name}
                       </span>
-                      <span className="text-xs text-stone-500 dark:text-stone-400">
+                      <span className={`text-xs ${isOwn ? 'text-teal-100' : 'text-stone-600 dark:text-stone-300'}`}>
                         {new Date(post.created_at).toLocaleString()}
                       </span>
                       {isOwn && status && (

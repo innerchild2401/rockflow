@@ -150,11 +150,11 @@ export function CommentWithReactions({
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-stone-900 dark:text-stone-50">{comment.author}</span>
                 {isThreaded && !parentQuote && (
-                  <span className="text-xs text-stone-400 dark:text-stone-500">replied</span>
+                  <span className="text-xs text-stone-600 dark:text-stone-400">replied</span>
                 )}
               </div>
               <span className="flex items-center gap-1">
-                <span className="text-xs text-stone-400 dark:text-stone-500">
+                <span className={`text-xs ${isOwn ? 'text-teal-100' : 'text-stone-600 dark:text-stone-300'}`}>
                   {new Date(comment.created_at).toLocaleString()}
                 </span>
                 {isOwn && sendStatus && (
