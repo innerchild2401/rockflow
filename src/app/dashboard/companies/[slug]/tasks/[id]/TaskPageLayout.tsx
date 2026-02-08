@@ -61,14 +61,14 @@ export default function TaskPageLayout({
             ))}
           </div>
         </div>
-        <div className="min-h-0 flex-1 overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {activeTab === 'details' && (
-            <div className="h-full overflow-y-auto">
+            <div className="min-h-0 flex-1 overflow-y-auto">
               {detailsSlot}
             </div>
           )}
           {activeTab === 'attachments' && (
-            <div className="flex h-full min-h-0 flex-col">
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
               {attachmentsSlot}
             </div>
           )}

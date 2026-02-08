@@ -67,7 +67,7 @@ export default function CompanyPageLayout({
             </button>
           </div>
         </div>
-        <div className="min-h-0 flex-1 overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {activeTab === 'feed' && (
             /* Fill tab area so only feed list scrolls, input sticky; same pattern as desktop */
             <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -80,7 +80,7 @@ export default function CompanyPageLayout({
             </div>
           )}
           {activeTab === 'recap' && (
-            <div className="h-full overflow-y-auto">
+            <div className="min-h-0 flex-1 overflow-y-auto">
               <CompanyRecapCard companyId={companyId} />
             </div>
           )}
