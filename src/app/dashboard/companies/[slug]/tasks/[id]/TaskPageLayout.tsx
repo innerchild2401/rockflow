@@ -81,12 +81,12 @@ export default function TaskPageLayout({
         </div>
       </div>
 
-      {/* Desktop: two-column grid */}
-      <div className="hidden gap-4 lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-3">
+      {/* Desktop: two-column grid — details left, chat right (wider: 1/4 + 3/4) */}
+      <div className="hidden gap-4 lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-4">
         <div className="min-w-0 overflow-auto lg:col-span-1">
           {detailsSlot}
         </div>
-        <div className="min-h-[55dvh] min-w-0 sm:min-h-[60dvh] lg:col-span-2 lg:min-h-0">
+        <div className="min-h-[55dvh] min-w-0 sm:min-h-[60dvh] lg:col-span-3 lg:min-h-0">
           {chatFullSlot}
         </div>
       </div>

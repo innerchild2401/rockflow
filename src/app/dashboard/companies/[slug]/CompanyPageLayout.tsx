@@ -87,10 +87,19 @@ export default function CompanyPageLayout({
         </div>
       </div>
 
-      {/* Desktop: stacked Recap then Feed */}
-      <div className="hidden space-y-8 md:block">
-        <CompanyRecapCard companyId={companyId} />
-        <CompanyFeed companyId={companyId} currentUserId={currentUserId} />
+      {/* Desktop: two columns like task page — Recap left, Feed right, both chats wider */}
+      <div className="hidden min-h-0 flex-1 gap-4 md:grid md:grid-cols-4 md:min-h-0">
+        <div className="min-w-0 overflow-auto md:col-span-1">
+          <CompanyRecapCard companyId={companyId} />
+        </div>
+        <div className="min-h-[55dvh] min-w-0 sm:min-h-[60dvh] md:col-span-3 md:min-h-0 md:flex md:flex-col">
+          <CompanyFeed
+            companyId={companyId}
+            currentUserId={currentUserId}
+            embeddedInTab
+            onNewCountChange={setFeedNewCount}
+          />
+        </div>
       </div>
     </>
   )

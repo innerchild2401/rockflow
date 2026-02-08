@@ -158,7 +158,7 @@ export default async function TaskPage({
   }
 
   return (
-    <div className="mx-auto flex min-h-0 max-w-7xl flex-1 flex-col px-4 sm:px-6 lg:min-h-0">
+    <div className="mx-auto flex min-h-0 max-w-7xl flex-1 flex-col px-0 sm:px-6 lg:min-h-0">
       {/* Desktop: full page header. Mobile: back + title live inside TaskPageLayout to save space */}
       <div className="mb-8 hidden flex-col gap-4 sm:flex-row sm:items-start sm:justify-between lg:mb-0 lg:flex">
         <PageHeader backHref={`/dashboard/companies/${slug}/tasks`} backLabel="Tasks" title="Task" />
