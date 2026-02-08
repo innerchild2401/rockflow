@@ -158,9 +158,9 @@ export default async function TaskPage({
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-4 px-4 sm:space-y-6 sm:px-6">
+    <div className="mx-auto flex min-h-[100dvh] max-w-7xl flex-col px-4 sm:px-6 lg:min-h-0">
       <PageHeader backHref={`/dashboard/companies/${slug}/tasks`} backLabel="Tasks" title="Task" />
-      <div className="flex flex-col gap-4 lg:min-h-0 lg:flex-1">
+      <div className="mt-4 flex min-h-0 flex-1 flex-col gap-4 sm:mt-6 lg:min-h-0">
         <TaskPageLayout
           detailsSlot={
             <TaskDetail

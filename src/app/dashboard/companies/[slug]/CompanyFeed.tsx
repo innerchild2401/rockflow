@@ -9,7 +9,17 @@ import { useCompanyFeedRealtime } from './useCompanyFeedRealtime'
 
 type OptimisticPost = FeedPost & { status: 'sending' | 'sent' }
 
-export default function CompanyFeed({ companyId, currentUserId }: { companyId: string; currentUserId: string }) {
+export default function CompanyFeed({
+  companyId,
+  currentUserId,
+  embeddedInTab,
+  onNewCountChange,
+}: {
+  companyId: string
+  currentUserId: string
+  embeddedInTab?: boolean
+  onNewCountChange?: (count: number) => void
+}) {
   const [posts, setPosts] = useState<FeedPost[]>([])
   const [optimisticPosts, setOptimisticPosts] = useState<OptimisticPost[]>([])
   const [effectiveReadAt, setEffectiveReadAt] = useState<string | null>(null)
@@ -65,6 +75,10 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
   const newPosts = displayPosts.filter((p) => new Date(p.created_at).getTime() > readAtMs)
 
   useEffect(() => {
+    onNewCountChange?.(newPosts.length)
+  }, [newPosts.length, onNewCountChange])
+
+  useEffect(() => {
     if (displayPosts.length > 0 && listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight
     }
@@ -106,7 +120,11 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
   return (
     <Card
       padding="none"
-      className="flex min-h-[50dvh] flex-col overflow-hidden sm:min-h-[280px] sm:h-[55vh] sm:max-h-[calc(100vh-10rem)]"
+      className={
+        embeddedInTab
+          ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'
+          : 'flex min-h-[50dvh] flex-col overflow-hidden sm:min-h-[280px] sm:h-[55vh] sm:max-h-[calc(100vh-10rem)]'
+      }
     >
       <div className="shrink-0 border-b border-zinc-200 px-4 py-3 dark:border-zinc-700 sm:px-6 sm:py-4">
         <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Team feed</h2>
@@ -116,7 +134,7 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
       </div>
       <div
         ref={listRef}
-        className="min-h-[200px] min-w-0 flex-1 overflow-y-auto px-4 py-3 sm:min-h-0 sm:px-6 sm:py-4"
+        className={`min-w-0 flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4 ${embeddedInTab ? 'min-h-0' : 'min-h-[200px] sm:min-h-0'}`}
       >
         {loading && (
           <div className="space-y-3">

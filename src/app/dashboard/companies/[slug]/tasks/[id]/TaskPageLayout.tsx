@@ -25,8 +25,8 @@ export default function TaskPageLayout({
 
   return (
     <>
-      {/* Mobile/tablet: tabs + tab content */}
-      <div className="flex min-h-[60dvh] flex-col lg:hidden">
+      {/* Mobile/tablet: tabs at top + tab content fills remaining viewport */}
+      <div className="flex min-h-0 flex-1 flex-col lg:hidden">
         <div className="shrink-0 border-b border-zinc-200 dark:border-zinc-700">
           <div className="flex">
             {tabs.map((tab) => (

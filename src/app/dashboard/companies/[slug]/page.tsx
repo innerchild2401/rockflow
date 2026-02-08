@@ -2,8 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Badge } from '@/components/ui/Badge'
-import CompanyRecapCard from './CompanyRecapCard'
-import CompanyFeed from './CompanyFeed'
+import CompanyPageLayout from './CompanyPageLayout'
 
 const APP_SCHEMA = 'app'
 
@@ -39,7 +38,7 @@ export default async function CompanyPage({
   if (!membership) notFound()
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div className="mx-auto flex min-h-[100dvh] max-w-4xl flex-col md:min-h-0 md:block">
       <PageHeader
         backHref="/dashboard/companies"
         backLabel="Companies"
@@ -48,8 +47,9 @@ export default async function CompanyPage({
         action={<Badge variant="outline">{membership.role}</Badge>}
       />
 
-      <CompanyRecapCard companyId={company.id} />
-      <CompanyFeed companyId={company.id} currentUserId={user.id} />
+      <div className="mt-4 flex min-h-0 flex-1 flex-col md:mt-8 md:block">
+        <CompanyPageLayout companyId={company.id} currentUserId={user.id} />
+      </div>
     </div>
   )
 }

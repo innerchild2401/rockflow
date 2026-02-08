@@ -450,8 +450,8 @@ export default function TaskChat({
         </>
       )}
 
-      {/* Messages/Activity Feed - min height on mobile so chat is readable */}
-      <div className="flex min-h-[40dvh] min-w-0 flex-1 flex-col sm:min-h-0">
+      {/* Messages/Activity Feed - min-h-0 when chatOnly so only contents scroll, input stays sticky */}
+      <div className={`flex min-w-0 flex-1 flex-col ${isChatOnly ? 'min-h-0' : 'min-h-[40dvh] sm:min-h-0'}`}>
         {/* Activity Feed Controls */}
         <div className="shrink-0 border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -480,7 +480,7 @@ export default function TaskChat({
             />
           </div>
         </div>
-        <div className="min-h-[200px] min-w-0 flex-1 overflow-y-auto px-4 py-4 text-base sm:min-h-0 sm:text-sm">
+        <div className={`min-w-0 flex-1 overflow-y-auto px-4 py-4 text-base sm:text-sm ${isChatOnly ? 'min-h-0' : 'min-h-[200px] sm:min-h-0'}`}>
           {error && (
             <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/50 dark:text-red-200">
               {error}
