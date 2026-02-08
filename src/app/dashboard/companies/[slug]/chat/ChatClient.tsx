@@ -64,8 +64,8 @@ export default function ChatClient({
             <div
               className={`max-w-[85%] rounded-lg px-4 py-2 text-sm ${
                 m.role === 'user'
-                  ? 'bg-blue-600 text-white dark:bg-blue-500'
-                  : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200'
+                  ? 'bg-teal-600 text-white dark:bg-teal-600/90'
+                  : 'bg-stone-100 text-stone-800 dark:bg-stone-700 dark:text-stone-200'
               }`}
             >
               <span className="whitespace-pre-wrap">{m.content}</span>

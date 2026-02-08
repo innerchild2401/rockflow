@@ -114,21 +114,21 @@ export default function CompanyFeed({ companyId, currentUserId }: { companyId: s
                   key={post.id}
                   className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-stone-200 text-xs font-medium text-stone-600 dark:bg-stone-600 dark:text-stone-300">
                     {post.author_name.charAt(0).toUpperCase()}
                   </div>
                   <div
                     className={`min-w-0 max-w-[85%] rounded-lg px-3 py-2 ${
                       isOwn
-                        ? 'bg-blue-600 text-white dark:bg-blue-500'
-                        : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200'
+                        ? 'bg-teal-600 text-white dark:bg-teal-600/90'
+                        : 'bg-stone-100 text-stone-800 dark:bg-stone-700 dark:text-stone-200'
                     }`}
                   >
                     <div className={`flex flex-wrap items-baseline gap-2 ${isOwn ? 'flex-row-reverse justify-end' : ''}`}>
                       <span className="text-sm font-medium">
                         {post.author_name}
                       </span>
-                      <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                      <span className="text-xs text-stone-500 dark:text-stone-400">
                         {new Date(post.created_at).toLocaleString()}
                       </span>
                       {isOwn && status && (

@@ -125,36 +125,36 @@ export function CommentWithReactions({
       <div
         className={`rounded-lg p-3 max-w-[85%] ${
           isThreaded && !isOwn
-            ? 'bg-zinc-50/50 dark:bg-zinc-800/30'
+            ? 'bg-stone-50/80 dark:bg-stone-800/40'
             : isOwn
-              ? 'bg-blue-600 text-white dark:bg-blue-500'
-              : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200'
+              ? 'bg-teal-600 text-white dark:bg-teal-600/90'
+              : 'bg-stone-100 text-stone-800 dark:bg-stone-700 dark:text-stone-200'
         }`}
       >
         <div className={`flex items-start gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
           {/* Avatar */}
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-medium text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-100 text-xs font-medium text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">
             {comment.author.charAt(0).toUpperCase()}
           </div>
           
           <div className="min-w-0 flex-1">
             {/* Quoted message (WhatsApp-style reply reference) */}
             {parentQuote && (
-              <div className={`mb-2 border-l-2 pl-2 text-xs ${isOwn ? 'border-blue-400/60 text-blue-100' : 'border-zinc-300 dark:border-zinc-500'}`}>
-                <span className={isOwn ? 'font-medium text-blue-100' : 'font-medium text-zinc-600 dark:text-zinc-400'}>{parentQuote.author}</span>
-                <p className={`mt-0.5 truncate ${isOwn ? 'text-blue-100/90' : 'text-zinc-500 dark:text-zinc-500'}`}>{parentQuote.body}</p>
+              <div className={`mb-2 border-l-2 pl-2 text-xs ${isOwn ? 'border-teal-400/70 text-teal-50' : 'border-stone-300 dark:border-stone-500'}`}>
+                <span className={isOwn ? 'font-medium text-teal-50' : 'font-medium text-stone-600 dark:text-stone-400'}>{parentQuote.author}</span>
+                <p className={`mt-0.5 truncate ${isOwn ? 'text-teal-50/90' : 'text-stone-500 dark:text-stone-500'}`}>{parentQuote.body}</p>
               </div>
             )}
             {/* Header */}
             <div className={`flex flex-wrap items-center gap-2 ${isOwn ? 'flex-row-reverse justify-end' : 'justify-between'}`}>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-zinc-900 dark:text-zinc-50">{comment.author}</span>
+                <span className="text-xs font-medium text-stone-900 dark:text-stone-50">{comment.author}</span>
                 {isThreaded && !parentQuote && (
-                  <span className="text-xs text-zinc-400 dark:text-zinc-500">replied</span>
+                  <span className="text-xs text-stone-400 dark:text-stone-500">replied</span>
                 )}
               </div>
               <span className="flex items-center gap-1">
-                <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                <span className="text-xs text-stone-400 dark:text-stone-500">
                   {new Date(comment.created_at).toLocaleString()}
                 </span>
                 {isOwn && sendStatus && (
@@ -207,7 +207,7 @@ export function CommentWithReactions({
                 </div>
               </div>
             ) : (
-              <p className={`mt-1.5 whitespace-pre-wrap text-sm ${isOwn ? 'text-white text-right' : 'text-zinc-800 dark:text-zinc-200'}`}>
+              <p className={`mt-1.5 whitespace-pre-wrap text-sm ${isOwn ? 'text-white text-right' : 'text-stone-800 dark:text-stone-200'}`}>
                 {highlightMentions(comment.body)}
               </p>
             )}
@@ -225,12 +225,12 @@ export function CommentWithReactions({
                       disabled={!canEdit}
                       className={`group flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors ${
                         userReacted
-                          ? 'border-blue-300 bg-blue-50 dark:border-blue-700 dark:bg-blue-950/30'
-                          : 'border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800'
+                          ? 'border-teal-300 bg-teal-50 dark:border-teal-700 dark:bg-teal-950/30'
+                          : 'border-stone-200 bg-white hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:hover:bg-stone-800'
                       } ${!canEdit ? 'cursor-default' : ''}`}
                     >
                       <span className="text-base leading-none">{emoji}</span>
-                      <span className="text-zinc-600 dark:text-zinc-400">{emojiReactions.length}</span>
+                      <span className="text-stone-600 dark:text-stone-400">{emojiReactions.length}</span>
                     </button>
                   )
                 })}
@@ -239,13 +239,13 @@ export function CommentWithReactions({
 
             {/* Actions */}
             {canEdit && !isEditing && (
-              <div className={`mt-2 flex flex-wrap items-center gap-3 ${isOwn ? 'text-blue-100 [&_button]:hover:text-white' : ''}`}>
+              <div className={`mt-2 flex flex-wrap items-center gap-3 ${isOwn ? 'text-teal-100 [&_button]:hover:text-white' : ''}`}>
                 <div className="relative">
                   <button
                     ref={emojiButtonRef}
                     type="button"
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    className={`flex items-center gap-1 rounded px-2 py-1 text-xs ${isOwn ? 'hover:bg-blue-500/50' : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-400'}`}
+                    className={`flex items-center gap-1 rounded px-2 py-1 text-xs ${isOwn ? 'hover:bg-teal-500/50' : 'text-stone-500 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-stone-800 dark:hover:text-stone-400'}`}
                   >
                     <span>😊</span>
                     <span>React</span>
@@ -260,7 +260,7 @@ export function CommentWithReactions({
                 <button
                   type="button"
                   onClick={() => { setIsEditing(true); setEditBody(comment.body) }}
-                  className={isOwn ? 'text-xs' : 'text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-400'}
+                  className={isOwn ? 'text-xs' : 'text-xs text-stone-500 hover:text-stone-700 dark:hover:text-stone-400'}
                 >
                   Edit
                 </button>
@@ -275,7 +275,7 @@ export function CommentWithReactions({
                   <button
                     type="button"
                     onClick={() => onReply(comment.id)}
-                    className={isOwn ? 'text-xs' : 'text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-400'}
+                    className={isOwn ? 'text-xs' : 'text-xs text-stone-500 hover:text-stone-700 dark:hover:text-stone-400'}
                   >
                     Reply
                   </button>
