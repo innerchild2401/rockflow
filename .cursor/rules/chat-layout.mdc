@@ -5,6 +5,8 @@ globs:
   - "**/TaskChat.tsx"
   - "**/TaskPageLayout.tsx"
   - "**/CompanyPageLayout.tsx"
+  - "**/ChatClient.tsx"
+  - "**/chat/page.tsx"
 ---
 
 # Chat layout (mobile and desktop)
@@ -12,4 +14,5 @@ globs:
 - **Only the chat message list should be scrollable.** Headers, filters, and any bars above the list must not scroll; use `shrink-0` and keep the scroll container as a single `flex-1 min-h-0 overflow-y-auto` (or equivalent) wrapper around the messages.
 - **Text input must stay sticky at the bottom.** Use `shrink-0` on the input/form container so it does not shrink and remains anchored at the bottom of the chat panel.
 - **Container:** The chat panel (card or wrapper) must be `flex flex-col overflow-hidden` (and `min-h-0` / `flex-1` where it lives in a flex parent) so that only the inner scroll div scrolls, not the whole panel.
-- Applies to **CompanyFeed** (social feed) and **TaskChat** (task chat), on both **mobile** and **desktop**.
+- **Desktop grids:** When chat is in a two-column layout (e.g. Recap|Feed or Details|Chat), use `grid-rows-1` and `overflow-hidden` on the grid and chat column so the row has fixed height and only the chat list scrolls.
+- Applies to **CompanyFeed** (social feed), **TaskChat** (task chat), **ChatClient** (Knowledge Base chat), and their page/layout wrappers, on both **mobile** and **desktop**.

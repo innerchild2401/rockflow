@@ -122,7 +122,7 @@ export default function CompanyFeed({
       padding="none"
       className={
         embeddedInTab
-          ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'
+          ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden w-full'
           : 'flex min-h-[50dvh] flex-col overflow-hidden sm:min-h-[280px] sm:h-[55vh] sm:max-h-[calc(100vh-10rem)]'
       }
     >

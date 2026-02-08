@@ -87,12 +87,12 @@ export default function CompanyPageLayout({
         </div>
       </div>
 
-      {/* Desktop: two columns like task page — Recap left, Feed right, both chats wider */}
-      <div className="hidden min-h-0 flex-1 gap-4 md:grid md:grid-cols-4 md:min-h-0">
-        <div className="min-w-0 overflow-auto md:col-span-1">
+      {/* Desktop: two columns — row height fixed so only feed list scrolls, not the page */}
+      <div className="hidden min-h-0 flex-1 gap-4 overflow-hidden md:grid md:grid-cols-4 md:grid-rows-1 md:min-h-0">
+        <div className="min-h-0 min-w-0 overflow-auto md:col-span-1">
           <CompanyRecapCard companyId={companyId} />
         </div>
-        <div className="min-h-[55dvh] min-w-0 sm:min-h-[60dvh] md:col-span-3 md:min-h-0 md:flex md:flex-col">
+        <div className="min-h-0 min-w-0 md:col-span-3 md:flex md:flex-col md:overflow-hidden">
           <CompanyFeed
             companyId={companyId}
             currentUserId={currentUserId}

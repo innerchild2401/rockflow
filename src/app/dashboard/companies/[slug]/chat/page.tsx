@@ -29,14 +29,14 @@ export default async function ChatPage({ params }: { params: Promise<{ slug: str
   }
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col space-y-4 sm:space-y-6">
+    <div className="mx-auto flex max-w-3xl min-h-0 flex-1 flex-col space-y-4 sm:space-y-6">
       <PageHeader
         backHref={`/dashboard/companies/${slug}`}
         backLabel={company.name}
         title="Knowledge Base"
         description="Ask questions answered only from your company documents. Answers include citations and links to source paragraphs."
       />
-      <Card padding="none" className="flex min-h-[55dvh] flex-1 overflow-hidden sm:min-h-[400px]">
+      <Card padding="none" className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <ChatClient companyId={company.id} slug={slug} />
       </Card>
     </div>

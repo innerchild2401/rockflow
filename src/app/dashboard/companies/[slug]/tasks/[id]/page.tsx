@@ -163,7 +163,7 @@ export default async function TaskPage({
       <div className="mb-8 hidden flex-col gap-4 sm:flex-row sm:items-start sm:justify-between lg:mb-0 lg:flex">
         <PageHeader backHref={`/dashboard/companies/${slug}/tasks`} backLabel="Tasks" title="Task" />
       </div>
-      <div className="mt-0 flex min-h-0 flex-1 flex-col gap-4 lg:mt-6 lg:min-h-0">
+      <div className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden gap-4 lg:mt-6 lg:min-h-0">
         <TaskPageLayout
           backHref={`/dashboard/companies/${slug}/tasks`}
           backLabel="Tasks"
