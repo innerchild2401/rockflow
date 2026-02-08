@@ -69,8 +69,8 @@ export default function CompanyPageLayout({
         </div>
         <div className="min-h-0 flex-1 overflow-hidden">
           {activeTab === 'feed' && (
-            /* Fixed height on mobile so feed area is bounded and input sticks to bottom (dashboard main doesn't constrain height) */
-            <div className="flex h-[calc(100dvh-12rem)] min-h-[280px] min-w-0 flex-col overflow-hidden sm:h-[calc(100dvh-11rem)]">
+            /* Fill tab area so only feed list scrolls, input sticky; same pattern as desktop */
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               <CompanyFeed
                 companyId={companyId}
                 currentUserId={currentUserId}
@@ -88,11 +88,11 @@ export default function CompanyPageLayout({
       </div>
 
       {/* Desktop: two columns — row height fixed so only feed list scrolls, not the page */}
-      <div className="hidden min-h-0 flex-1 gap-4 overflow-hidden md:grid md:grid-cols-4 md:grid-rows-1 md:min-h-0">
+      <div className="hidden min-h-0 flex-1 gap-4 overflow-hidden md:grid md:h-full md:grid-cols-4 md:grid-rows-1 md:min-h-0">
         <div className="min-h-0 min-w-0 overflow-auto md:col-span-1">
           <CompanyRecapCard companyId={companyId} />
         </div>
-        <div className="min-h-0 min-w-0 md:col-span-3 md:flex md:flex-col md:overflow-hidden">
+        <div className="min-h-0 min-w-0 overflow-hidden md:col-span-3 md:flex md:flex-col">
           <CompanyFeed
             companyId={companyId}
             currentUserId={currentUserId}

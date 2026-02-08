@@ -38,7 +38,7 @@ export default async function CompanyPage({
   if (!membership) notFound()
 
   return (
-    <div className="mx-auto flex min-h-[100dvh] max-w-4xl flex-col md:min-h-0 md:max-w-7xl md:flex-1">
+    <div className="mx-auto flex min-h-0 max-w-4xl flex-1 flex-col overflow-hidden md:max-w-7xl">
       {/* Desktop: full page header. Mobile: back lives inside CompanyPageLayout to save space */}
       <div className="mb-8 hidden flex-col gap-4 sm:flex-row sm:items-start sm:justify-between md:mb-0 md:flex">
         <PageHeader
